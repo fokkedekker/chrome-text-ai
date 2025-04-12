@@ -19,9 +19,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function processTextWithSambaNova(text, prompt) {
     const API_ENDPOINT = 'https://api.sambanova.ai/v1/chat/completions';
-    const API_KEY = 'ae90ad5a-922d-4055-aebc-be6a6761ac9e';
 
     try {
+        // Get API key from storage
+        const result = await chrome.storage.sync.get(['apiKey']);
+        if (!result.apiKey) {
+            throw new Error('Please set your API key in the extension settings');
+        }
+
         const requestBody = {
             stream: false,
             model: 'Llama-3.1-Swallow-70B-Instruct-v0.3',
@@ -41,12 +46,13 @@ async function processTextWithSambaNova(text, prompt) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
+                'Authorization': `Bearer ${result.apiKey}`
             },
             body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
             throw new Error(`API request failed: ${response.status} ${response.statusText}`);
         }
 
