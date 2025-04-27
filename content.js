@@ -66,7 +66,7 @@ class AIEditor {
                 </div>
 
                 <div id="ai-editor-diff-container" style="display: none;">
-                     <label>Proposed Changes (Select changes to apply):</label>
+                     <label>Proposed Changes (Use buttons to accept/reject):</label>
                      <div class="ai-editor-diff-view" id="ai-diff-view"></div>
                 </div>
                 
@@ -75,7 +75,7 @@ class AIEditor {
                 <div class="ai-editor-buttons">
                     <button id="ai-editor-submit" class="ai-editor-submit">Get Suggestions</button>
                     <button id="ai-editor-follow-up" class="ai-editor-follow-up" style="display: none;">Send Follow-up</button>
-                    <button id="ai-editor-apply" class="ai-editor-apply" style="display: none;">Apply Selected Changes</button>
+                    <button id="ai-editor-apply" class="ai-editor-apply" style="display: none;">Apply Accepted Changes</button>
                     <button id="ai-editor-cancel" class="ai-editor-cancel">Cancel</button>
                 </div>
             </div>
@@ -83,9 +83,8 @@ class AIEditor {
 
         document.body.appendChild(modal);
         this.editorModal = modal;
-
-        // Add event listeners
         this.addModalEventListeners();
+        this.addDiffViewEventListeners(); // Add listener for diff buttons
     }
 
     addModalEventListeners() {
@@ -101,6 +100,18 @@ class AIEditor {
         cancelButton.addEventListener('click', () => this.closeModal());
     }
 
+    addDiffViewEventListeners() {
+        const diffView = this.editorModal.querySelector('#ai-diff-view');
+        diffView.addEventListener('click', (event) => {
+            const button = event.target.closest('.diff-action-button');
+            if (button) {
+                const segmentIndex = parseInt(button.dataset.segmentIndex, 10);
+                const action = button.dataset.action; // 'accept' or 'reject'
+                this.handleDiffAction(segmentIndex, action);
+            }
+        });
+    }
+
     handleEditorOpen() {
         this.selectedContext = this.getSelectionContext(); // Get fresh context on open
         if (!this.selectedContext) {
@@ -111,7 +122,6 @@ class AIEditor {
         if (!this.editorModal) {
             this.createEditorModal();
         } else {
-            // Reset modal state if re-opening
             this.resetModalUI();
         }
 
@@ -156,13 +166,11 @@ class AIEditor {
 
         submitButton.disabled = isLoading;
         followUpButton.disabled = isLoading;
-        // Keep apply button enabled during loading? Maybe disable too.
         applyButton.disabled = isLoading;
 
         if (isLoading) {
             this.showStatus('Processing with AI...', 'info');
         } else {
-            // Clear loading status or let subsequent actions set it
             const statusDiv = this.editorModal.querySelector('#ai-editor-status');
             if (statusDiv.textContent === 'Processing with AI...') {
                 statusDiv.style.display = 'none';
@@ -176,64 +184,164 @@ class AIEditor {
         if (!this.editorModal) return;
         const diffView = this.editorModal.querySelector('#ai-diff-view');
         diffView.innerHTML = ''; // Clear previous diff
-        this.currentDiffSegments = diffSegments; // Store for later use
 
-        let segmentIndex = 0;
-        diffSegments.forEach(segment => {
-            const span = document.createElement('span');
-            span.textContent = segment.text;
-            span.classList.add(`diff-${segment.type}`);
+        // Store segments with initial accepted state and link pairs
+        this.currentDiffSegments = diffSegments.map((segment, index) => ({
+            ...segment,
+            originalIndex: index, // Keep track of original index before processing
+            accepted: true,
+            isChangePair: false,
+            linkedSegmentIndex: -1
+        }));
 
-            if (segment.type === 'insert' || segment.type === 'delete') {
-                span.classList.add('diff-change');
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.checked = true; // Default to accepted
-                checkbox.dataset.segmentIndex = segmentIndex;
-                span.insertBefore(checkbox, span.firstChild);
+        let i = 0;
+        while (i < this.currentDiffSegments.length) {
+            const segment = this.currentDiffSegments[i];
+            let nextSegment = (i + 1 < this.currentDiffSegments.length) ? this.currentDiffSegments[i + 1] : null;
+
+            // Check for adjacent delete/insert pair
+            if (segment.type === 'delete' && nextSegment && nextSegment.type === 'insert') {
+                // Mark segments as part of a pair and link them
+                segment.isChangePair = true;
+                nextSegment.isChangePair = true;
+                segment.linkedSegmentIndex = i + 1;
+                nextSegment.linkedSegmentIndex = i;
+
+                const pairWrapper = document.createElement('div');
+                pairWrapper.classList.add('diff-segment-wrapper', 'diff-pair', 'accepted');
+                pairWrapper.dataset.segmentIndex = i; // Use first segment index for controls
+
+                // Render delete part
+                const deleteSpan = document.createElement('span');
+                deleteSpan.textContent = segment.text;
+                deleteSpan.classList.add('diff-delete');
+                pairWrapper.appendChild(deleteSpan);
+
+                // Render insert part
+                const insertSpan = document.createElement('span');
+                insertSpan.textContent = nextSegment.text;
+                insertSpan.classList.add('diff-insert');
+                pairWrapper.appendChild(insertSpan);
+
+                // Add shared controls
+                this.addDiffControls(pairWrapper, i, true); // isPair = true
+
+                diffView.appendChild(pairWrapper);
+                i += 2; // Skip the next segment as it was processed
+            } else {
+                // Handle standalone segments (equal, or unpaired insert/delete)
+                const segmentWrapper = document.createElement('div');
+                segmentWrapper.classList.add('diff-segment-wrapper');
+                if (segment.type !== 'equal') {
+                    segmentWrapper.classList.add('diff-change', 'accepted');
+                }
+                segmentWrapper.dataset.segmentIndex = i;
+
+                const textSpan = document.createElement('span');
+                textSpan.textContent = segment.text;
+                textSpan.classList.add(`diff-${segment.type}`);
+                segmentWrapper.appendChild(textSpan);
+
+                // Add controls only if it's a changeable segment
+                if (segment.type === 'insert' || segment.type === 'delete') {
+                    this.addDiffControls(segmentWrapper, i, false); // isPair = false
+                }
+
+                diffView.appendChild(segmentWrapper);
+                i += 1;
             }
-            diffView.appendChild(span);
-            segmentIndex++;
-        });
+        }
 
         // Show diff view and relevant buttons
         this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'block';
-        this.editorModal.querySelector('#ai-editor-submit').style.display = 'none'; // Hide initial submit
+        this.editorModal.querySelector('#ai-editor-submit').style.display = 'none';
         this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'inline-block';
         this.editorModal.querySelector('#ai-editor-apply').style.display = 'inline-block';
-        this.showStatus('Review the changes and select which to apply.', 'info');
+        this.showStatus('Review the changes. Use ✓/✗ buttons to accept/reject.', 'info');
+    }
+
+    // Helper to add Accept/Reject controls
+    addDiffControls(wrapper, segmentIndex, isPair) {
+        const controls = document.createElement('div');
+        controls.classList.add('diff-controls');
+
+        const acceptButton = document.createElement('button');
+        acceptButton.textContent = '✓';
+        acceptButton.title = isPair ? 'Accept replacement' : 'Accept change';
+        acceptButton.classList.add('diff-action-button', 'accept');
+        acceptButton.dataset.segmentIndex = segmentIndex;
+        acceptButton.dataset.action = 'accept';
+        acceptButton.disabled = true; // Start disabled (accepted by default)
+
+        const rejectButton = document.createElement('button');
+        rejectButton.textContent = '✗';
+        rejectButton.title = isPair ? 'Reject replacement' : 'Reject change';
+        rejectButton.classList.add('diff-action-button', 'reject');
+        rejectButton.dataset.segmentIndex = segmentIndex;
+        rejectButton.dataset.action = 'reject';
+
+        controls.appendChild(acceptButton);
+        controls.appendChild(rejectButton);
+        wrapper.appendChild(controls);
+    }
+
+    handleDiffAction(segmentIndex, action) {
+        const segment = this.currentDiffSegments[segmentIndex];
+        if (!segment || (segment.type !== 'insert' && segment.type !== 'delete')) return;
+
+        const isAccepted = (action === 'accept');
+        const linkedSegmentIndex = segment.linkedSegmentIndex;
+
+        // Update state for the primary segment
+        segment.accepted = isAccepted;
+        const segmentWrapper = this.editorModal.querySelector(`.diff-segment-wrapper[data-segment-index="${segmentIndex}"]`);
+        if (!segmentWrapper) return;
+
+        // Update state for the linked segment if it exists
+        if (segment.isChangePair && linkedSegmentIndex !== -1 && this.currentDiffSegments[linkedSegmentIndex]) {
+            this.currentDiffSegments[linkedSegmentIndex].accepted = isAccepted;
+            // Note: The wrapper and buttons are associated with the *first* segment of the pair (the delete segment)
+            // So we only need to update the visual state of the main pair wrapper.
+        }
+
+        // Update visuals for the wrapper (either single or pair)
+        const acceptButton = segmentWrapper.querySelector('.diff-action-button.accept');
+        const rejectButton = segmentWrapper.querySelector('.diff-action-button.reject');
+
+        if (isAccepted) {
+            segmentWrapper.classList.remove('rejected');
+            segmentWrapper.classList.add('accepted');
+            acceptButton.disabled = true;
+            rejectButton.disabled = false;
+        } else { // reject
+            segmentWrapper.classList.remove('accepted');
+            segmentWrapper.classList.add('rejected');
+            acceptButton.disabled = false;
+            rejectButton.disabled = true;
+        }
     }
 
     getAcceptedDiffText() {
-        if (!this.editorModal || !this.currentDiffSegments) return '';
-
+        if (!this.currentDiffSegments) return '';
         let final_text = '';
-        const checkboxes = this.editorModal.querySelectorAll('.diff-change input[type="checkbox"]');
-        const acceptedIndices = new Set();
-        checkboxes.forEach(cb => {
-            if (cb.checked) {
-                acceptedIndices.add(parseInt(cb.dataset.segmentIndex, 10));
-            }
-        });
-
-        this.currentDiffSegments.forEach((segment, index) => {
+        this.currentDiffSegments.forEach((segment) => {
             if (segment.type === 'equal') {
                 final_text += segment.text;
             } else if (segment.type === 'insert') {
-                if (acceptedIndices.has(index)) {
-                    final_text += segment.text; // Add accepted insertion
+                if (segment.accepted) { // Include accepted insertions
+                    final_text += segment.text;
                 }
             } else if (segment.type === 'delete') {
-                if (!acceptedIndices.has(index)) {
-                    final_text += segment.text; // Add text back if deletion was rejected
+                if (!segment.accepted) { // Include text of rejected deletions
+                    final_text += segment.text;
                 }
             }
         });
         return final_text;
     }
 
-    // --- Event Handlers for Buttons ---
-
+    // --- Event Handlers for Buttons (handleInitialSubmit, handleFollowUpSubmit, handleApplyChanges) ---
+    // These remain mostly the same, relying on the updated getAcceptedDiffText
     async handleInitialSubmit() {
         if (!this.selectedContext) {
             this.showStatus('Error: No text selected.', 'error');
@@ -275,20 +383,19 @@ class AIEditor {
             return;
         }
 
-        // Get the current text based on accepted changes so far
         const currentTextInEditor = this.getAcceptedDiffText();
 
         this.setLoadingState(true);
         try {
             const response = await chrome.runtime.sendMessage({
                 action: 'process-follow-up',
-                text: currentTextInEditor, // Send text reflecting current accepted state
+                text: currentTextInEditor,
                 prompt: followUpPrompt
             });
 
             if (response.success && response.diffData && response.diffData.diff_segments) {
-                this.renderDiff(response.diffData.diff_segments); // Re-render with new diff
-                promptInput.value = ''; // Clear prompt after follow-up
+                this.renderDiff(response.diffData.diff_segments);
+                promptInput.value = '';
             } else {
                 this.showStatus(`Error: ${response.error || 'Failed to get follow-up suggestions.'}`, 'error');
             }
@@ -308,27 +415,23 @@ class AIEditor {
 
         const finalText = this.getAcceptedDiffText();
 
-        // Generate a single replacement object covering the original selection
         const replacement = {
-            start: 0, // Start of the original selection (relative)
-            end: this.selectedContext.text.length, // End of the original selection (relative)
+            start: 0,
+            end: this.selectedContext.text.length,
             text: finalText
         };
 
         try {
-            // Directly call applyReplacements with the single calculated change
             this.applyReplacements([replacement]);
             this.closeModal();
         } catch (error) {
-            // applyReplacements should handle its own errors/status
             console.error("Error during final application:", error);
-            // Optionally show status here too
             this.showStatus('Failed to apply changes. Check console.', 'error');
         }
     }
 
-    // --- Text Selection and Replacement Logic (Modified) ---
-
+    // --- Text Selection and Replacement Logic (getSelectionContext, applyReplacements) ---
+    // Keep these as they were in the previous step
     getSelectionContext() {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0) return null;
@@ -338,10 +441,8 @@ class AIEditor {
 
         let context = null;
 
-        // --- Handle Input / Textarea Selection --- 
         if (tagName === 'TEXTAREA' || tagName === 'INPUT') {
             const text = activeElement.value.substring(activeElement.selectionStart, activeElement.selectionEnd);
-            // Only return context if there is actually selected text
             if (text) {
                 context = {
                     text,
@@ -355,7 +456,6 @@ class AIEditor {
             }
         }
 
-        // --- Handle Standard DOM Selection (if not in input/textarea or no text selected in input) --- 
         if (!context) {
             const text = selection.toString().trim();
             if (!text) return null;
@@ -368,9 +468,6 @@ class AIEditor {
             }
             parentElement = parentElement || (container.nodeType === Node.TEXT_NODE ? container.parentElement : container);
 
-            // We need start/end relative to the element for replacement
-            // Calculate start/end relative to the parentElement textContent if possible
-            // This simple calculation might be inaccurate for complex structures
             let selectionStart = 0;
             let selectionEnd = 0;
             try {
@@ -378,21 +475,20 @@ class AIEditor {
                 tempRange.selectNodeContents(parentElement);
                 tempRange.setEnd(range.startContainer, range.startOffset);
                 selectionStart = tempRange.toString().length;
-                selectionEnd = selectionStart + text.length; // Approximate end based on selected text length
+                selectionEnd = selectionStart + text.length;
             } catch (e) {
                 console.warn("Could not accurately calculate selection offsets relative to parent.", e);
-                // Fallback using potentially unreliable offsets
                 selectionStart = range.startOffset;
                 selectionEnd = range.endOffset;
             }
 
             context = {
                 text,
-                fullText: parentElement.textContent, // Get text content of the block
-                selectionStart: selectionStart, // Offset relative to parentElement.textContent
-                selectionEnd: selectionEnd,   // Offset relative to parentElement.textContent
+                fullText: parentElement.textContent,
+                selectionStart: selectionStart,
+                selectionEnd: selectionEnd,
                 element: parentElement,
-                range: range.cloneRange(), // Keep original range for reference if needed
+                range: range.cloneRange(),
                 isInput: false
             };
         }
@@ -401,62 +497,47 @@ class AIEditor {
     }
 
     applyReplacements(replacements) {
-        // This function now receives a list of replacements (often just one)
-        // calculated by the modal logic, relative to the original selection.
         if (!this.selectedContext) {
             console.error("ApplyReplacements called without selection context.");
-            // Maybe show status? If modal is closed, not possible.
             return;
         }
 
         const isInput = this.selectedContext.isInput;
         const targetElement = this.selectedContext.element;
-        const originalSelectionStart = this.selectedContext.selectionStart; // Start within the element
-        const originalSelectionEnd = this.selectedContext.selectionEnd;   // End within the element
+        const originalSelectionStart = this.selectedContext.selectionStart;
+        const originalSelectionEnd = this.selectedContext.selectionEnd;
 
         try {
-            // Sort replacements in reverse order (though likely only one)
             replacements.sort((a, b) => b.start - a.start);
 
             if (isInput) {
-                // --- Handle Textarea/Input using .value --- 
                 let currentValue = targetElement.value;
                 for (const replacement of replacements) {
-                    // Indices from replacement are relative to the original *selection*.
-                    // Convert them to be relative to the start of the element's value.
                     const absoluteStart = originalSelectionStart + replacement.start;
                     const absoluteEnd = originalSelectionStart + replacement.end;
 
-                    // Validate absolute indices
                     if (absoluteStart < 0 || absoluteEnd < 0 || absoluteStart > currentValue.length || absoluteEnd > currentValue.length || absoluteStart > absoluteEnd) {
                         console.warn("Skipping invalid replacement indices for input/textarea:", replacement, "->", { absoluteStart, absoluteEnd }, "for value length:", currentValue.length);
                         continue;
                     }
-                    // Apply replacement using adjusted absolute indices
                     currentValue = currentValue.slice(0, absoluteStart) + replacement.text + currentValue.slice(absoluteEnd);
                 }
                 targetElement.value = currentValue;
-                // Optionally, try to re-select the modified text
                 targetElement.setSelectionRange(originalSelectionStart, originalSelectionStart + replacements.reduce((len, r) => len + r.text.length, 0));
 
             } else {
-                // --- Handle ContentEditable / Standard Elements using Range --- 
-                // We have ONE replacement covering the whole original selection. 
-                // Need to re-establish the range for the original selection.
                 if (!this.selectedContext.range) {
                     throw new Error("Cannot apply replacement: Original range missing.")
                 }
 
                 const originalRange = this.selectedContext.range.cloneRange();
 
-                // Assume only one replacement is passed for non-input elements
                 if (replacements.length === 1 && replacements[0].start === 0) {
                     const replacementText = replacements[0].text;
                     originalRange.deleteContents();
                     if (replacementText) {
                         const newTextNode = document.createTextNode(replacementText);
                         originalRange.insertNode(newTextNode);
-                        // Select the newly inserted text
                         originalRange.selectNode(newTextNode);
                         window.getSelection().removeAllRanges();
                         window.getSelection().addRange(originalRange);
@@ -468,11 +549,9 @@ class AIEditor {
             }
 
             targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            // Selection context is cleared by the calling function (handleApplyChanges) or closeModal
 
         } catch (error) {
             console.error('Error applying final replacements:', error);
-            // Re-throw error so the calling function can handle status updates
             throw error;
         }
     }

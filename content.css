@@ -67,15 +67,16 @@
 }
 
 .ai-editor-diff-view .diff-insert {
-    background-color: #d4ffd4;
-    /* Light green */
+    background-color: #e6ffed;
+    /* Lighter green for pending */
+    border: 1px solid #b7f7c6;
     text-decoration: none;
-    /* Override potential browser defaults */
 }
 
 .ai-editor-diff-view .diff-delete {
-    background-color: #ffd4d4;
-    /* Light red */
+    background-color: #ffeeee;
+    /* Lighter red for pending */
+    border: 1px solid #fcc5c5;
     text-decoration: line-through;
 }
 
@@ -170,4 +171,125 @@
 
 .ai-editor-buttons .ai-editor-cancel:hover {
     background-color: #5a6268;
+}
+
+/* Wrapper for each segment */
+.diff-segment-wrapper {
+    display: inline;
+    margin-right: 2px;
+    position: relative;
+    padding: 1px 0;
+    /* Add a subtle bottom border to change pairs for visual grouping */
+}
+
+/* Style for delete/insert pairs specifically */
+.diff-segment-wrapper.diff-pair {
+    display: inline-block;
+    /* Make pairs block-level for better control spacing */
+    border: 1px solid transparent;
+    /* Add border for hover/state changes */
+    border-radius: 4px;
+    padding: 0 3px;
+    /* Add slight padding inside the pair wrapper */
+    margin-bottom: 3px;
+    /* Spacing below pairs */
+}
+
+/* Adjust text spans within a pair */
+.diff-pair .diff-delete,
+.diff-pair .diff-insert {
+    display: inline;
+    /* Keep text parts inline within the pair block */
+    border: none;
+    /* Remove individual borders */
+    margin-right: 1px;
+}
+
+/* Controls container - position above the pair */
+.diff-controls {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 2px);
+    /* Position above the pair wrapper */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(240, 240, 240, 0.95);
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 2px 4px;
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Show controls on hover over a changeable segment/pair */
+.diff-segment-wrapper.diff-change:hover .diff-controls,
+.diff-segment-wrapper.diff-pair:hover .diff-controls {
+    display: inline-flex;
+    gap: 4px;
+}
+
+/* Accept/Reject buttons */
+.diff-action-button {
+    background: none;
+    border: 1px solid transparent;
+    padding: 0 4px;
+    margin: 0;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    border-radius: 3px;
+}
+
+.diff-action-button.accept {
+    color: #28a745;
+    /* Green */
+}
+
+.diff-action-button.reject {
+    color: #dc3545;
+    /* Red */
+}
+
+.diff-action-button:hover {
+    border-color: #ccc;
+}
+
+.diff-action-button:disabled {
+    color: #aaa;
+    cursor: not-allowed;
+    border-color: transparent;
+}
+
+/* Styling for accepted/rejected states */
+.diff-segment-wrapper.accepted .diff-insert {
+    background-color: #d4ffd4;
+    /* Slightly darker green */
+    border-color: #a0e5a0;
+}
+
+.diff-segment-wrapper.rejected .diff-insert {
+    background-color: #f0f0f0;
+    /* Grey out rejected additions */
+    border-color: #ddd;
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.diff-segment-wrapper.accepted .diff-delete {
+    /* Already has line-through, maybe make it less prominent? */
+    background-color: #ffd4d4;
+    /* Slightly darker red */
+    border-color: #f7b0b0;
+    opacity: 0.8;
+}
+
+.diff-segment-wrapper.rejected .diff-delete {
+    background-color: transparent;
+    /* Revert background */
+    border-color: transparent;
+    text-decoration: none;
+    /* Remove line-through */
+    color: #555;
+    /* Indicate it's original text being kept */
 }
