@@ -125,15 +125,24 @@ class AIEditor {
             this.resetModalUI();
         }
 
-        this.editorModal.style.display = 'flex';
+        // Use class for visibility to trigger transition
+        requestAnimationFrame(() => { // Ensure modal is in DOM before adding class
+            this.editorModal.classList.add('visible');
+        });
+
         this.editorModal.querySelector('#ai-editor-prompt-input').focus();
         this.showStatus('Selected: "' + this.selectedContext.text.substring(0, 50) + '..." Please provide instructions.', 'info');
     }
 
     closeModal() {
         if (this.editorModal) {
-            this.editorModal.style.display = 'none';
-            this.resetModalUI();
+            this.editorModal.classList.remove('visible'); // Remove class for fade out
+            // Optionally wait for transition before resetting/hiding completely
+            setTimeout(() => {
+                this.resetModalUI();
+                // Ensure display: none is set after transition
+                this.editorModal.style.display = 'none';
+            }, 300); // Match transition duration
         }
     }
 
@@ -265,16 +274,20 @@ class AIEditor {
         const controls = document.createElement('div');
         controls.classList.add('diff-controls');
 
+        // SVG Icons (simple checkmark and X)
+        const acceptSVG = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"></path></svg>`;
+        const rejectSVG = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"></path></svg>`;
+
         const acceptButton = document.createElement('button');
-        acceptButton.textContent = '✓';
+        acceptButton.innerHTML = acceptSVG;
         acceptButton.title = isPair ? 'Accept replacement' : 'Accept change';
         acceptButton.classList.add('diff-action-button', 'accept');
         acceptButton.dataset.segmentIndex = segmentIndex;
         acceptButton.dataset.action = 'accept';
-        acceptButton.disabled = true; // Start disabled (accepted by default)
+        acceptButton.disabled = true;
 
         const rejectButton = document.createElement('button');
-        rejectButton.textContent = '✗';
+        rejectButton.innerHTML = rejectSVG;
         rejectButton.title = isPair ? 'Reject replacement' : 'Reject change';
         rejectButton.classList.add('diff-action-button', 'reject');
         rejectButton.dataset.segmentIndex = segmentIndex;

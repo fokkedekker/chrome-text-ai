@@ -1,3 +1,23 @@
+:root {
+    --ai-primary-color: #007bff;
+    --ai-primary-hover-color: #0056b3;
+    --ai-secondary-color: #6c757d;
+    --ai-secondary-hover-color: #5a6268;
+    --ai-success-color: #28a745;
+    --ai-danger-color: #dc3545;
+    --ai-light-bg: #f8f9fa;
+    --ai-dark-text: #212529;
+    --ai-light-text: #6c757d;
+    --ai-border-color: #dee2e6;
+    --ai-modal-bg: #ffffff;
+    --ai-diff-insert-bg: #e6ffed;
+    --ai-diff-insert-border: #b7f7c6;
+    --ai-diff-delete-bg: #ffeeee;
+    --ai-diff-delete-border: #fcc5c5;
+    --ai-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    --ai-monospace-font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
 /* Basic Modal Styling */
 .ai-editor-modal {
     display: none;
@@ -9,40 +29,55 @@
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.5);
-    /* Dim background */
+    background-color: rgba(0, 0, 0, 0.6);
+    /* Darker backdrop */
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.ai-editor-modal.visible {
+    display: flex;
+    opacity: 1;
 }
 
 .ai-editor-content {
-    background-color: #fefefe;
+    background-color: var(--ai-modal-bg);
     margin: auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 700px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 25px 30px;
+    border: none;
+    /* Remove basic border */
+    width: 85%;
+    max-width: 750px;
+    border-radius: 12px;
+    /* More rounded */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    /* Softer shadow */
     display: flex;
     flex-direction: column;
     max-height: 90vh;
-    /* Limit height */
+    font-family: var(--ai-font-family);
+    color: var(--ai-dark-text);
 }
 
 .ai-editor-content h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
+    margin: 0 0 20px 0;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--ai-border-color);
+    font-size: 1.4em;
+    font-weight: 600;
+    color: var(--ai-dark-text);
 }
 
 .ai-editor-diff-view {
-    border: 1px solid #ccc;
+    border: 1px solid var(--ai-border-color);
     padding: 15px;
-    margin-bottom: 15px;
-    background-color: #f9f9f9;
-    font-family: monospace;
+    margin-bottom: 20px;
+    background-color: var(--ai-light-bg);
+    font-family: var(--ai-monospace-font-family);
+    font-size: 0.95em;
+    line-height: 1.6;
     white-space: pre-wrap;
     /* Wrap lines */
     overflow-y: auto;
@@ -51,15 +86,14 @@
     /* Allow diff view to take space */
     min-height: 150px;
     /* Minimum height */
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
 }
 
 .ai-editor-diff-view span {
-    display: inline-block;
-    /* Allows margin/padding */
-    padding: 1px 0;
-    border-radius: 3px;
-    margin-right: 2px;
-    /* Spacing between segments */
+    display: inline;
+    padding: 2px 0;
+    margin: 0;
 }
 
 .ai-editor-diff-view .diff-equal {
@@ -67,17 +101,17 @@
 }
 
 .ai-editor-diff-view .diff-insert {
-    background-color: #e6ffed;
-    /* Lighter green for pending */
-    border: 1px solid #b7f7c6;
+    background-color: var(--ai-diff-insert-bg);
+    border-bottom: 1px solid var(--ai-diff-insert-border);
     text-decoration: none;
 }
 
 .ai-editor-diff-view .diff-delete {
-    background-color: #ffeeee;
-    /* Lighter red for pending */
-    border: 1px solid #fcc5c5;
+    background-color: var(--ai-diff-delete-bg);
+    border-bottom: 1px solid var(--ai-diff-delete-border);
     text-decoration: line-through;
+    color: var(--ai-danger-color);
+    opacity: 0.8;
 }
 
 .ai-editor-diff-view .diff-change input[type="checkbox"] {
@@ -88,66 +122,88 @@
 
 /* Styling for the input/prompt area */
 .ai-editor-prompt-area {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
 }
 
 .ai-editor-prompt-area label {
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--ai-light-text);
 }
 
 .ai-editor-prompt {
     width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    padding: 10px 12px;
+    border: 1px solid var(--ai-border-color);
+    border-radius: 6px;
     box-sizing: border-box;
     /* Include padding/border in width */
-    min-height: 60px;
+    min-height: 70px;
+    font-family: var(--ai-font-family);
+    font-size: 1em;
+    line-height: 1.5;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-editor-prompt:focus {
+    outline: none;
+    border-color: var(--ai-primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
 .ai-editor-status {
-    margin: 10px 0;
-    padding: 8px;
-    border-radius: 4px;
+    margin: 15px 0;
+    padding: 10px 15px;
+    border-radius: 6px;
     display: none;
     /* Hidden by default */
     text-align: center;
+    font-size: 0.95em;
 }
 
 .ai-editor-status.info {
     background-color: #e7f3fe;
-    color: #0966ab;
+    color: #0c5460;
+    border: 1px solid #bde0fe;
 }
 
 .ai-editor-status.error {
-    background-color: #fdecea;
-    color: #a71d2a;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 .ai-editor-buttons {
     display: flex;
     justify-content: flex-end;
     /* Align buttons to the right */
-    gap: 10px;
+    gap: 12px;
     /* Space between buttons */
-    margin-top: 15px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--ai-border-color);
 }
 
 .ai-editor-buttons button {
-    padding: 8px 15px;
+    padding: 10px 18px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 0.95em;
+    font-weight: 500;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+}
+
+.ai-editor-buttons button:active {
+    transform: translateY(1px);
 }
 
 .ai-editor-buttons .ai-editor-submit,
 .ai-editor-buttons .ai-editor-follow-up,
 .ai-editor-buttons .ai-editor-apply {
-    background-color: #007bff;
+    background-color: var(--ai-primary-color);
     color: white;
 }
 
@@ -159,137 +215,190 @@
 }
 
 .ai-editor-buttons .ai-editor-cancel {
-    background-color: #6c757d;
+    background-color: var(--ai-secondary-color);
     color: white;
 }
 
 .ai-editor-buttons .ai-editor-submit:hover,
 .ai-editor-buttons .ai-editor-follow-up:hover,
 .ai-editor-buttons .ai-editor-apply:hover {
-    background-color: #0056b3;
+    background-color: var(--ai-primary-hover-color);
+    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
 }
 
 .ai-editor-buttons .ai-editor-cancel:hover {
-    background-color: #5a6268;
+    background-color: var(--ai-secondary-hover-color);
+}
+
+.ai-editor-buttons button:disabled {
+    background-color: #adb5bd;
+    /* Use a neutral disabled color */
+    color: #f8f9fa;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 /* Wrapper for each segment */
 .diff-segment-wrapper {
     display: inline;
-    margin-right: 2px;
     position: relative;
-    padding: 1px 0;
-    /* Add a subtle bottom border to change pairs for visual grouping */
+    padding: 2px 0px;
+    /* Add slight vertical padding */
+    border-radius: 4px;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+    margin-right: 1px;
+    /* Minimal spacing */
 }
 
-/* Style for delete/insert pairs specifically */
+/* Style for delete/insert pairs */
 .diff-segment-wrapper.diff-pair {
     display: inline-block;
-    /* Make pairs block-level for better control spacing */
     border: 1px solid transparent;
-    /* Add border for hover/state changes */
-    border-radius: 4px;
-    padding: 0 3px;
-    /* Add slight padding inside the pair wrapper */
+    border-radius: 5px;
+    padding: 1px 4px;
     margin-bottom: 3px;
-    /* Spacing below pairs */
+    background-color: transparent;
+    /* Handled by children initially */
 }
 
-/* Adjust text spans within a pair */
+/* Remove individual borders/bg on spans within a pair */
 .diff-pair .diff-delete,
 .diff-pair .diff-insert {
-    display: inline;
-    /* Keep text parts inline within the pair block */
     border: none;
-    /* Remove individual borders */
-    margin-right: 1px;
+    background-color: transparent;
+    padding: 0;
+    margin: 0 1px;
 }
 
-/* Controls container - position above the pair */
+/* Controls container */
 .diff-controls {
     display: none;
     position: absolute;
-    bottom: calc(100% + 2px);
-    /* Position above the pair wrapper */
+    top: -24px;
+    /* Position above */
     left: 50%;
     transform: translateX(-50%);
-    background-color: rgba(240, 240, 240, 0.95);
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 2px 4px;
+    background-color: #fff;
+    border: 1px solid var(--ai-border-color);
+    border-radius: 15px;
+    /* Pill shape */
+    padding: 2px 5px;
     white-space: nowrap;
     z-index: 10;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out, top 0.15s ease-in-out;
 }
 
-/* Show controls on hover over a changeable segment/pair */
+/* Show controls on hover */
 .diff-segment-wrapper.diff-change:hover .diff-controls,
 .diff-segment-wrapper.diff-pair:hover .diff-controls {
     display: inline-flex;
-    gap: 4px;
+    gap: 5px;
+    opacity: 1;
+    top: -28px;
+    /* Move slightly up on hover */
 }
 
-/* Accept/Reject buttons */
+/* Accept/Reject buttons - using SVG now */
 .diff-action-button {
     background: none;
-    border: 1px solid transparent;
-    padding: 0 4px;
+    border: none;
+    padding: 2px;
     margin: 0;
     cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    border-radius: 3px;
+    display: flex;
+    /* Align icon nicely */
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    transition: background-color 0.2s ease;
 }
 
-.diff-action-button.accept {
-    color: #28a745;
-    /* Green */
+.diff-action-button svg {
+    width: 12px;
+    height: 12px;
 }
 
-.diff-action-button.reject {
-    color: #dc3545;
-    /* Red */
+.diff-action-button.accept svg {
+    fill: var(--ai-success-color);
+}
+
+.diff-action-button.reject svg {
+    fill: var(--ai-danger-color);
 }
 
 .diff-action-button:hover {
-    border-color: #ccc;
+    background-color: #eee;
 }
 
 .diff-action-button:disabled {
-    color: #aaa;
+    opacity: 0.4;
     cursor: not-allowed;
-    border-color: transparent;
+    background-color: transparent;
 }
 
 /* Styling for accepted/rejected states */
 .diff-segment-wrapper.accepted .diff-insert {
-    background-color: #d4ffd4;
-    /* Slightly darker green */
-    border-color: #a0e5a0;
-}
-
-.diff-segment-wrapper.rejected .diff-insert {
-    background-color: #f0f0f0;
-    /* Grey out rejected additions */
-    border-color: #ddd;
-    text-decoration: line-through;
-    opacity: 0.6;
+    background-color: var(--ai-diff-insert-bg);
+    border-color: var(--ai-diff-insert-border);
 }
 
 .diff-segment-wrapper.accepted .diff-delete {
-    /* Already has line-through, maybe make it less prominent? */
-    background-color: #ffd4d4;
-    /* Slightly darker red */
-    border-color: #f7b0b0;
-    opacity: 0.8;
+    background-color: var(--ai-diff-delete-bg);
+    border-color: var(--ai-diff-delete-border);
+    opacity: 0.7;
+}
+
+/* Pair specific accepted state */
+.diff-segment-wrapper.diff-pair.accepted {
+    border-color: transparent;
+}
+
+.diff-segment-wrapper.diff-pair.accepted .diff-insert {
+    background-color: var(--ai-diff-insert-bg);
+}
+
+.diff-segment-wrapper.diff-pair.accepted .diff-delete {
+    background-color: var(--ai-diff-delete-bg);
+    text-decoration: line-through;
+    opacity: 0.7;
+}
+
+.diff-segment-wrapper.rejected .diff-insert {
+    background-color: #eee;
+    border-color: #ddd;
+    text-decoration: line-through;
+    opacity: 0.5;
 }
 
 .diff-segment-wrapper.rejected .diff-delete {
     background-color: transparent;
-    /* Revert background */
     border-color: transparent;
     text-decoration: none;
-    /* Remove line-through */
-    color: #555;
-    /* Indicate it's original text being kept */
+    color: var(--ai-light-text);
+    opacity: 1;
+}
+
+/* Pair specific rejected state */
+.diff-segment-wrapper.diff-pair.rejected {
+    background-color: #f8f9fa;
+    /* Light bg to show original kept */
+    border-color: #eee;
+}
+
+.diff-segment-wrapper.diff-pair.rejected .diff-insert {
+    background-color: transparent;
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+.diff-segment-wrapper.diff-pair.rejected .diff-delete {
+    background-color: transparent;
+    text-decoration: none;
+    color: var(--ai-dark-text);
+    /* Show original text clearly */
+    opacity: 1;
 }
