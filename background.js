@@ -22,25 +22,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 });
 
-// Initial processing function (minor change to return format)
+// Initial processing function
 async function processTextWithSambaNova(text, prompt) {
     const API_ENDPOINT = 'https://api.sambanova.ai/v1/chat/completions';
 
     try {
-        const result = await chrome.storage.sync.get(['apiKey']);
-        if (!result.apiKey) {
+        // Fetch API Key and Custom Instructions
+        const settings = await chrome.storage.sync.get(['apiKey', 'customInstructions']);
+        if (!settings.apiKey) {
             throw new Error('Please set your API key in the extension settings');
         }
+        const apiKey = settings.apiKey;
+        const customInstructions = settings.customInstructions || ''; // Default to empty string if not set
 
-        let userContent = `Original text: "${text}"\nInstructions: ${prompt}\n\nRespond with diff_segments JSON only.`;
-
-        const requestBody = {
-            stream: false,
-            model: 'Meta-Llama-3.3-70B-Instruct',
-            messages: [
-                {
-                    role: 'system',
-                    content: `You are a text editing assistant performing changes based on user instructions.
+        // Base system prompt
+        let systemPrompt = `You are a text editing assistant performing changes based on user instructions.
 1. Analyze the provided text and the user's instructions.
 2. Return ONLY a JSON object describing the changes with the following structure:
 {
@@ -52,7 +48,22 @@ async function processTextWithSambaNova(text, prompt) {
 }
 - Ensure the segments cover the entire resulting text when concatenated.
 - Represent the difference between the input text and the result of applying the instructions.
-Do not include any other text, explanations, or markdown formatting. Just the JSON.`
+Do not include any other text, explanations, or markdown formatting. Just the JSON.`;
+
+        // Append custom instructions if they exist
+        if (customInstructions) {
+            systemPrompt += `\n\nIMPORTANT: Always adhere to the following custom instructions provided by the user:\n${customInstructions}`;
+        }
+
+        let userContent = `Original text: "${text}"\nInstructions: ${prompt}\n\nRespond with diff_segments JSON only.`;
+
+        const requestBody = {
+            stream: false,
+            model: 'Meta-Llama-3.3-70B-Instruct',
+            messages: [
+                {
+                    role: 'system',
+                    content: systemPrompt // Use the potentially modified system prompt
                 },
                 {
                     role: 'user',
@@ -65,7 +76,7 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${result.apiKey}`
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify(requestBody)
         });
@@ -89,7 +100,7 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
             if (!diffResult || !Array.isArray(diffResult.diff_segments)) {
                 throw new Error('AI response is missing the diff_segments array or is not valid JSON.');
             }
-            return diffResult; // Return the object { diff_segments: [...] }
+            return diffResult;
         } catch (e) {
             console.error("Failed to parse AI response:", assistantMessage, e);
             throw new Error(`Failed to parse AI response as JSON diff segments: ${e.message}`);
@@ -100,14 +111,41 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
     }
 }
 
-// New function for handling follow-up edits with history
+// Function for handling follow-up edits with history
 async function processFollowUpWithSambaNova(originalText, diffHistory, newPrompt) {
     const API_ENDPOINT = 'https://api.sambanova.ai/v1/chat/completions';
 
     try {
-        const result = await chrome.storage.sync.get(['apiKey']);
-        if (!result.apiKey) {
+        // Fetch API Key and Custom Instructions
+        const settings = await chrome.storage.sync.get(['apiKey', 'customInstructions']);
+        if (!settings.apiKey) {
             throw new Error('Please set your API key in the extension settings');
+        }
+        const apiKey = settings.apiKey;
+        const customInstructions = settings.customInstructions || ''; // Default to empty string
+
+        // Base system prompt for follow-up
+        let systemPrompt = `You are a text editing assistant performing changes based on user instructions.
+1. You are given the ORIGINAL text, a history of previously proposed changes (delete/insert segments) with their accepted/rejected status, and NEW instructions.
+2. Your goal is to generate a NEW set of diff segments (relative to the ORIGINAL text) that incorporates the user's feedback (accepted/rejected changes) and fulfills the NEW instructions.
+3. Base your response on the ORIGINAL text, modifying it according to the accepted changes from the history AND the new instructions.
+4. Return ONLY a JSON object describing the *new* changes compared to the *original* text with the following structure:
+{
+    "diff_segments": [
+        { "type": "equal", "text": "Unchanged part of the original text" },
+        { "type": "delete", "text": "Part of the original text to be deleted now" },
+        { "type": "insert", "text": "New text to be added" }
+    ]
+}
+- Ensure the segments cover the entire final text when applied to the original.
+- 'delete' segments refer to text present in the original but not the final output.
+- 'insert' segments refer to text present in the final output but not the original.
+- 'equal' segments refer to text present in both the original and the final output after all changes.
+Do not include any other text, explanations, or markdown formatting. Just the JSON.`;
+
+        // Append custom instructions if they exist
+        if (customInstructions) {
+            systemPrompt += `\n\nIMPORTANT: Always adhere to the following custom instructions provided by the user:\n${customInstructions}`;
         }
 
         // Construct user message including the history
@@ -129,23 +167,7 @@ ${historyString}\n\n`;
             messages: [
                 {
                     role: 'system',
-                    content: `You are a text editing assistant performing changes based on user instructions.
-1. You are given the ORIGINAL text, a history of previously proposed changes (delete/insert segments) with their accepted/rejected status, and NEW instructions.
-2. Your goal is to generate a NEW set of diff segments (relative to the ORIGINAL text) that incorporates the user's feedback (accepted/rejected changes) and fulfills the NEW instructions.
-3. Base your response on the ORIGINAL text, modifying it according to the accepted changes from the history AND the new instructions.
-4. Return ONLY a JSON object describing the *new* changes compared to the *original* text with the following structure:
-{
-    "diff_segments": [
-        { "type": "equal", "text": "Unchanged part of the original text" },
-        { "type": "delete", "text": "Part of the original text to be deleted now" },
-        { "type": "insert", "text": "New text to be added" }
-    ]
-}
-- Ensure the segments cover the entire final text when applied to the original.
-- 'delete' segments refer to text present in the original but not the final output.
-- 'insert' segments refer to text present in the final output but not the original.
-- 'equal' segments refer to text present in both the original and the final output after all changes.
-Do not include any other text, explanations, or markdown formatting. Just the JSON.`
+                    content: systemPrompt // Use the potentially modified system prompt
                 },
                 {
                     role: 'user',
@@ -158,7 +180,7 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${result.apiKey}`
+                'Authorization': `Bearer ${apiKey}`
             },
             body: JSON.stringify(requestBody)
         });
@@ -182,7 +204,7 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
             if (!diffResult || !Array.isArray(diffResult.diff_segments)) {
                 throw new Error('AI response is missing the diff_segments array or is not valid JSON (Follow-up).');
             }
-            return diffResult; // Return the object { diff_segments: [...] }
+            return diffResult;
         } catch (e) {
             console.error("Failed to parse AI response (Follow-up):", assistantMessage, e);
             throw new Error(`Failed to parse AI response as JSON diff segments (Follow-up): ${e.message}`);

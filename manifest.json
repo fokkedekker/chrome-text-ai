@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "AI Text Editor",
     "version": "1.0",
-    "description": "Edit text using AI with diff view",
+    "description": "Edit selected text using AI with an interactive diff view.",
     "permissions": [
         "activeTab",
         "storage",
@@ -12,7 +12,17 @@
         "https://api.sambanova.ai/*"
     ],
     "action": {
-        "default_popup": "popup.html"
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon16.png",
+            "32": "icon32.png"
+        }
+    },
+    "icons": {
+        "16": "icon16.png",
+        "32": "icon32.png",
+        "48": "icon48.png",
+        "128": "icon128.png"
     },
     "options_page": "options.html",
     "commands": {
