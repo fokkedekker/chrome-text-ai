@@ -27,9 +27,6 @@ class AIEditor {
             return true; // Keep message channel open for async response
         });
 
-        // Inject CSS
-        this.injectCSS('content.css');
-
         // Track text selection (simplistic, only captures on mouseup outside modal)
         document.addEventListener('mouseup', (event) => {
             // Only update selection if the event didn't happen inside the modal
@@ -43,13 +40,8 @@ class AIEditor {
         });
     }
 
-    injectCSS(cssFile) {
-        const link = document.createElement('link');
-        link.href = chrome.runtime.getURL(cssFile);
-        link.type = 'text/css';
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-    }
+    // Inject CSS - REMOVED as manifest handles injection
+    // this.injectCSS('content.css');
 
     // --- Modal Creation and Management ---
 
@@ -94,7 +86,10 @@ class AIEditor {
         const cancelButton = this.editorModal.querySelector('#ai-editor-cancel');
         const promptInput = this.editorModal.querySelector('#ai-editor-prompt-input');
 
-        submitButton.addEventListener('click', () => this.handleInitialSubmit());
+        submitButton.addEventListener('click', () => {
+            console.log("Submit button clicked, calling handleInitialSubmit...");
+            this.handleInitialSubmit();
+        });
         followUpButton.addEventListener('click', () => this.handleFollowUpSubmit());
         applyButton.addEventListener('click', () => this.handleApplyChanges());
         cancelButton.addEventListener('click', () => this.closeModal());
@@ -356,6 +351,7 @@ class AIEditor {
     // --- Event Handlers for Buttons (handleInitialSubmit, handleFollowUpSubmit, handleApplyChanges) ---
     // These remain mostly the same, relying on the updated getAcceptedDiffText
     async handleInitialSubmit() {
+        console.log("handleInitialSubmit triggered.");
         if (!this.selectedContext) {
             this.showStatus('Error: No text selected.', 'error');
             return;
@@ -374,11 +370,13 @@ class AIEditor {
         this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'none'; // Hide diff view
 
         try {
-            const response = await chrome.runtime.sendMessage({
+            const messagePayload = {
                 action: 'process-text',
                 text: this.selectedContext.text, // Send original selected text
                 prompt: prompt
-            });
+            };
+            console.log("Sending message from content.js:", messagePayload);
+            const response = await chrome.runtime.sendMessage(messagePayload);
 
             // Updated check for the new response structure
             if (response.success && response.diff) {
@@ -398,8 +396,9 @@ class AIEditor {
                 this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'none';
             }
         } catch (error) {
-            console.error('Error sending message to background:', error);
-            this.showStatus(`Error: ${error.message}`, 'error');
+            console.error('Caught error in handleInitialSubmit (content.js):', error);
+            // Display the error message from the caught error
+            this.showStatus(`Error: ${error.message || 'Unknown error during message send'}`, 'error');
             // Ensure correct button states on catch
             this.editorModal.querySelector('#ai-editor-submit').style.display = 'inline-block';
             this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'none';

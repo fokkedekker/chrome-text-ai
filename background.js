@@ -11,14 +11,23 @@ chrome.commands.onCommand.addListener((command) => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'process-text') {
         processTextWithSambaNova(request.text, request.prompt)
-            .then(diffData => sendResponse({ success: true, diff: diffData.diff_segments })) // Use diff key
-            .catch(error => sendResponse({ success: false, error: error.message }));
+            .then(diffData => {
+                sendResponse({ success: true, diff: diffData.diff_segments });
+            })
+            .catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
         return true;
-    } else if (request.action === 'request-ai-edit') { // Handle the new action
+    } else if (request.action === 'request-ai-edit') {
         processFollowUpWithSambaNova(request.originalText, request.diffHistory, request.prompt)
-            .then(diffData => sendResponse({ success: true, diff: diffData.diff_segments })) // Use diff key
-            .catch(error => sendResponse({ success: false, error: error.message }));
-        return true; // Required for async response
+            .then(diffData => {
+                sendResponse({ success: true, diff: diffData.diff_segments });
+            })
+            .catch(error => {
+                sendResponse({ success: false, error: error.message });
+            });
+        return true;
+    } else {
     }
 });
 
@@ -32,7 +41,8 @@ async function processTextWithSambaNova(text, prompt) {
         if (!settings.apiKey) {
             throw new Error('Please set your API key in the extension settings');
         }
-        const apiKey = settings.apiKey;
+        // Trim the key to remove potential leading/trailing whitespace
+        const apiKey = settings.apiKey.trim();
         const customInstructions = settings.customInstructions || ''; // Default to empty string if not set
 
         // Base system prompt
@@ -106,8 +116,9 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
             throw new Error(`Failed to parse AI response as JSON diff segments: ${e.message}`);
         }
     } catch (error) {
+        // Simplify logging back
         console.error('SambaNova API Error (Initial):', error);
-        throw error;
+        throw error; // Restore throwing the error
     }
 }
 
@@ -119,9 +130,9 @@ async function processFollowUpWithSambaNova(originalText, diffHistory, newPrompt
         // Fetch API Key and Custom Instructions
         const settings = await chrome.storage.sync.get(['apiKey', 'customInstructions']);
         if (!settings.apiKey) {
-            throw new Error('Please set your API key in the extension settings');
+            throw new Error('Please set your API key in the extension settings (follow-up)');
         }
-        const apiKey = settings.apiKey;
+        const apiKey = settings.apiKey.trim();
         const customInstructions = settings.customInstructions || ''; // Default to empty string
 
         // Base system prompt for follow-up
@@ -210,7 +221,8 @@ ${historyString}\n\n`;
             throw new Error(`Failed to parse AI response as JSON diff segments (Follow-up): ${e.message}`);
         }
     } catch (error) {
+        // Simplify logging back
         console.error('SambaNova API Error (Follow-up):', error);
-        throw error;
+        throw error; // Restore throwing the error
     }
 } 

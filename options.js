@@ -23,9 +23,17 @@ document.getElementById('save').addEventListener('click', () => {
         return;
     }
 
+    console.log("Saving API Key (options.js):", apiKey);
+
     // Save both settings
     chrome.storage.sync.set({ apiKey, customInstructions }, () => {
-        showStatus('Settings saved successfully!', 'success');
+        // Check for errors during save
+        if (chrome.runtime.lastError) {
+            console.error("Error saving settings:", chrome.runtime.lastError);
+            showStatus(`Error saving settings: ${chrome.runtime.lastError.message}`, 'error');
+        } else {
+            showStatus('Settings saved successfully!', 'success');
+        }
     });
 });
 
