@@ -125,6 +125,8 @@ class AIEditor {
             this.resetModalUI();
         }
 
+        this.editorModal.style.display = 'flex'; // Ensure display is set correctly before transition
+
         // Use class for visibility to trigger transition
         requestAnimationFrame(() => { // Ensure modal is in DOM before adding class
             this.editorModal.classList.add('visible');
