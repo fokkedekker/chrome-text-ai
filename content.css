@@ -1,0 +1,173 @@
+/* Basic Modal Styling */
+.ai-editor-modal {
+    display: none;
+    /* Hidden by default */
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Dim background */
+    justify-content: center;
+    align-items: center;
+}
+
+.ai-editor-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 700px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    /* Limit height */
+}
+
+.ai-editor-content h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.ai-editor-diff-view {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+    font-family: monospace;
+    white-space: pre-wrap;
+    /* Wrap lines */
+    overflow-y: auto;
+    /* Scroll if needed */
+    flex-grow: 1;
+    /* Allow diff view to take space */
+    min-height: 150px;
+    /* Minimum height */
+}
+
+.ai-editor-diff-view span {
+    display: inline-block;
+    /* Allows margin/padding */
+    padding: 1px 0;
+    border-radius: 3px;
+    margin-right: 2px;
+    /* Spacing between segments */
+}
+
+.ai-editor-diff-view .diff-equal {
+    /* No special styling needed */
+}
+
+.ai-editor-diff-view .diff-insert {
+    background-color: #d4ffd4;
+    /* Light green */
+    text-decoration: none;
+    /* Override potential browser defaults */
+}
+
+.ai-editor-diff-view .diff-delete {
+    background-color: #ffd4d4;
+    /* Light red */
+    text-decoration: line-through;
+}
+
+.ai-editor-diff-view .diff-change input[type="checkbox"] {
+    margin-right: 5px;
+    vertical-align: middle;
+    /* Align checkbox nicely */
+}
+
+/* Styling for the input/prompt area */
+.ai-editor-prompt-area {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-editor-prompt-area label {
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.ai-editor-prompt {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    /* Include padding/border in width */
+    min-height: 60px;
+}
+
+.ai-editor-status {
+    margin: 10px 0;
+    padding: 8px;
+    border-radius: 4px;
+    display: none;
+    /* Hidden by default */
+    text-align: center;
+}
+
+.ai-editor-status.info {
+    background-color: #e7f3fe;
+    color: #0966ab;
+}
+
+.ai-editor-status.error {
+    background-color: #fdecea;
+    color: #a71d2a;
+}
+
+.ai-editor-buttons {
+    display: flex;
+    justify-content: flex-end;
+    /* Align buttons to the right */
+    gap: 10px;
+    /* Space between buttons */
+    margin-top: 15px;
+}
+
+.ai-editor-buttons button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.ai-editor-buttons .ai-editor-submit,
+.ai-editor-buttons .ai-editor-follow-up,
+.ai-editor-buttons .ai-editor-apply {
+    background-color: #007bff;
+    color: white;
+}
+
+.ai-editor-buttons .ai-editor-submit:disabled,
+.ai-editor-buttons .ai-editor-follow-up:disabled,
+.ai-editor-buttons .ai-editor-apply:disabled {
+    background-color: #a0cfff;
+    cursor: not-allowed;
+}
+
+.ai-editor-buttons .ai-editor-cancel {
+    background-color: #6c757d;
+    color: white;
+}
+
+.ai-editor-buttons .ai-editor-submit:hover,
+.ai-editor-buttons .ai-editor-follow-up:hover,
+.ai-editor-buttons .ai-editor-apply:hover {
+    background-color: #0056b3;
+}
+
+.ai-editor-buttons .ai-editor-cancel:hover {
+    background-color: #5a6268;
+}

@@ -57,29 +57,17 @@
 }
 
 /* Diff view styles */
-.ai-diff-container {
-    display: inline;
-    white-space: pre-wrap;
-    line-height: inherit;
-    font-family: inherit;
-    font-size: inherit;
-}
-
 .ai-deleted-text {
     display: inline;
-    background-color: #ffd7d5;
+    background-color: rgba(255, 0, 0, 0.2);
     text-decoration: line-through;
-    padding: 2px 0;
-    margin-right: 4px;
-    border-radius: 2px;
+    color: #666;
 }
 
 .ai-added-text {
     display: inline;
-    background-color: #c0f0c0;
-    padding: 2px 0;
-    margin-left: 4px;
-    border-radius: 2px;
+    background-color: rgba(0, 255, 0, 0.2);
+    color: inherit;
 }
 
 /* Hover states */
