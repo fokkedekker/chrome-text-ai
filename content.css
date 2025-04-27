@@ -243,11 +243,9 @@
     display: inline;
     position: relative;
     padding: 2px 0px;
-    /* Add slight vertical padding */
     border-radius: 4px;
     transition: background-color 0.2s ease, opacity 0.2s ease;
     margin-right: 1px;
-    /* Minimal spacing */
 }
 
 /* Style for delete/insert pairs */
@@ -258,7 +256,6 @@
     padding: 1px 4px;
     margin-bottom: 3px;
     background-color: transparent;
-    /* Handled by children initially */
 }
 
 /* Remove individual borders/bg on spans within a pair */
@@ -270,37 +267,19 @@
     margin: 0 1px;
 }
 
-/* Controls container */
+/* Controls container - NOW ALWAYS VISIBLE AND INLINE */
 .diff-controls {
-    display: none;
-    position: absolute;
-    top: -24px;
-    /* Position above */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #fff;
-    border: 1px solid var(--ai-border-color);
-    border-radius: 15px;
-    /* Pill shape */
-    padding: 2px 5px;
-    white-space: nowrap;
-    z-index: 10;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    transition: opacity 0.15s ease-in-out, top 0.15s ease-in-out;
-}
-
-/* Show controls on hover */
-.diff-segment-wrapper.diff-change:hover .diff-controls,
-.diff-segment-wrapper.diff-pair:hover .diff-controls {
     display: inline-flex;
-    gap: 5px;
-    opacity: 1;
-    top: -28px;
-    /* Move slightly up on hover */
+    /* Always visible as flex container */
+    vertical-align: middle;
+    /* Align nicely with text */
+    margin-left: 8px;
+    /* Space between text and controls */
+    gap: 4px;
+    /* Space between buttons */
 }
 
-/* Accept/Reject buttons - using SVG now */
+/* Accept/Reject buttons */
 .diff-action-button {
     background: none;
     border: none;
@@ -308,7 +287,7 @@
     margin: 0;
     cursor: pointer;
     display: flex;
-    /* Align icon nicely */
+    /* Ensures button is visible */
     align-items: center;
     justify-content: center;
     border-radius: 50%;
@@ -334,10 +313,10 @@
     background-color: #eee;
 }
 
-.diff-action-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    background-color: transparent;
+/* Make sure the initially hidden button occupies no space */
+.diff-action-button[style*="display: none"] {
+    display: none !important;
+    /* Override inline-flex if needed */
 }
 
 /* Styling for accepted/rejected states */

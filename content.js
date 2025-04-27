@@ -271,12 +271,11 @@ class AIEditor {
         this.showStatus('Review the changes. Use ✓/✗ buttons to accept/reject.', 'info');
     }
 
-    // Helper to add Accept/Reject controls
+    // Helper to add Accept/Reject controls (Updated to toggle visibility)
     addDiffControls(wrapper, segmentIndex, isPair) {
         const controls = document.createElement('div');
         controls.classList.add('diff-controls');
 
-        // SVG Icons (simple checkmark and X)
         const acceptSVG = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"></path></svg>`;
         const rejectSVG = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"></path></svg>`;
 
@@ -286,7 +285,7 @@ class AIEditor {
         acceptButton.classList.add('diff-action-button', 'accept');
         acceptButton.dataset.segmentIndex = segmentIndex;
         acceptButton.dataset.action = 'accept';
-        acceptButton.disabled = true;
+        acceptButton.style.display = 'none'; // Initially hidden (since default is accepted)
 
         const rejectButton = document.createElement('button');
         rejectButton.innerHTML = rejectSVG;
@@ -294,6 +293,7 @@ class AIEditor {
         rejectButton.classList.add('diff-action-button', 'reject');
         rejectButton.dataset.segmentIndex = segmentIndex;
         rejectButton.dataset.action = 'reject';
+        // rejectButton starts visible by default
 
         controls.appendChild(acceptButton);
         controls.appendChild(rejectButton);
@@ -315,24 +315,22 @@ class AIEditor {
         // Update state for the linked segment if it exists
         if (segment.isChangePair && linkedSegmentIndex !== -1 && this.currentDiffSegments[linkedSegmentIndex]) {
             this.currentDiffSegments[linkedSegmentIndex].accepted = isAccepted;
-            // Note: The wrapper and buttons are associated with the *first* segment of the pair (the delete segment)
-            // So we only need to update the visual state of the main pair wrapper.
         }
 
-        // Update visuals for the wrapper (either single or pair)
+        // Update visuals for the wrapper and toggle button visibility
         const acceptButton = segmentWrapper.querySelector('.diff-action-button.accept');
         const rejectButton = segmentWrapper.querySelector('.diff-action-button.reject');
 
         if (isAccepted) {
             segmentWrapper.classList.remove('rejected');
             segmentWrapper.classList.add('accepted');
-            acceptButton.disabled = true;
-            rejectButton.disabled = false;
+            acceptButton.style.display = 'none'; // Hide Accept button
+            rejectButton.style.display = 'inline-flex'; // Show Reject button
         } else { // reject
             segmentWrapper.classList.remove('accepted');
             segmentWrapper.classList.add('rejected');
-            acceptButton.disabled = false;
-            rejectButton.disabled = true;
+            acceptButton.style.display = 'inline-flex'; // Show Accept button
+            rejectButton.style.display = 'none'; // Hide Reject button
         }
     }
 
