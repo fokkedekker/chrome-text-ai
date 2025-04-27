@@ -368,6 +368,11 @@ class AIEditor {
         }
 
         this.setLoadingState(true);
+        this.editorModal.querySelector('#ai-editor-submit').style.display = 'none'; // Hide initial submit
+        this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'none'; // Ensure follow-up is hidden initially
+        this.editorModal.querySelector('#ai-editor-apply').style.display = 'none'; // Ensure apply is hidden initially
+        this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'none'; // Hide diff view
+
         try {
             const response = await chrome.runtime.sendMessage({
                 action: 'process-text',
@@ -375,45 +380,84 @@ class AIEditor {
                 prompt: prompt
             });
 
-            if (response.success && response.diffData && response.diffData.diff_segments) {
-                this.renderDiff(response.diffData.diff_segments);
+            // Updated check for the new response structure
+            if (response.success && response.diff) {
+                this.renderDiff(response.diff); // Use response.diff directly
+                this.showStatus('Suggestions received. Review the changes.', 'info');
+                // Show Follow-up and Apply buttons, hide initial submit
+                this.editorModal.querySelector('#ai-editor-submit').style.display = 'none';
+                this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'inline-block';
+                this.editorModal.querySelector('#ai-editor-apply').style.display = 'inline-block';
+                this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'block'; // Show diff view
             } else {
+                // If error or no diff, show error and revert button states
                 this.showStatus(`Error: ${response.error || 'Failed to get suggestions.'}`, 'error');
+                this.editorModal.querySelector('#ai-editor-submit').style.display = 'inline-block';
+                this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'none';
+                this.editorModal.querySelector('#ai-editor-apply').style.display = 'none';
+                this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'none';
             }
         } catch (error) {
             console.error('Error sending message to background:', error);
             this.showStatus(`Error: ${error.message}`, 'error');
+            // Ensure correct button states on catch
+            this.editorModal.querySelector('#ai-editor-submit').style.display = 'inline-block';
+            this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'none';
+            this.editorModal.querySelector('#ai-editor-apply').style.display = 'none';
+            this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'none';
         } finally {
             this.setLoadingState(false);
         }
     }
 
     async handleFollowUpSubmit() {
+        if (!this.editorModal || !this.selectedContext) return;
+
         const promptInput = this.editorModal.querySelector('#ai-editor-prompt-input');
-        const followUpPrompt = promptInput.value.trim();
-        if (!followUpPrompt) {
+        const newPrompt = promptInput.value.trim();
+
+        if (!newPrompt) {
             this.showStatus('Please enter follow-up instructions.', 'error');
             return;
         }
 
-        const currentTextInEditor = this.getAcceptedDiffText();
+        // Prepare the history of changes
+        // Only include segments that represent changes (delete/insert)
+        const diffHistory = this.currentDiffSegments
+            .filter(seg => seg.type === 'delete' || seg.type === 'insert')
+            .map(seg => ({
+                type: seg.type,
+                text: seg.text,
+                accepted: seg.accepted // Include the accepted/rejected state
+            }));
 
         this.setLoadingState(true);
+        this.showStatus('Processing follow-up with AI...', 'info');
+
         try {
             const response = await chrome.runtime.sendMessage({
-                action: 'process-follow-up',
-                text: currentTextInEditor,
-                prompt: followUpPrompt
+                action: 'request-ai-edit',
+                originalText: this.selectedContext.text,
+                diffHistory: diffHistory, // Send the processed history
+                prompt: newPrompt // Send the new prompt
             });
 
-            if (response.success && response.diffData && response.diffData.diff_segments) {
-                this.renderDiff(response.diffData.diff_segments);
-                promptInput.value = '';
-            } else {
-                this.showStatus(`Error: ${response.error || 'Failed to get follow-up suggestions.'}`, 'error');
+            if (response.error) {
+                throw new Error(response.error);
             }
+
+            console.log("Received follow-up diff data:", response.diff);
+
+            if (response.diff) {
+                this.renderDiff(response.diff);
+                this.showStatus('Follow-up suggestions received. Review the changes.', 'info');
+                // Keep Follow-up and Apply buttons visible
+            } else {
+                this.showStatus('No changes suggested for the follow-up.', 'info');
+            }
+
         } catch (error) {
-            console.error('Error sending follow-up message:', error);
+            console.error('Error getting follow-up suggestions:', error);
             this.showStatus(`Error: ${error.message}`, 'error');
         } finally {
             this.setLoadingState(false);
