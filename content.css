@@ -1,19 +1,19 @@
 :root {
-    --ai-primary-color: #007bff;
-    --ai-primary-hover-color: #0056b3;
-    --ai-secondary-color: #6c757d;
-    --ai-secondary-hover-color: #5a6268;
-    --ai-success-color: #28a745;
-    --ai-danger-color: #dc3545;
-    --ai-light-bg: #f8f9fa;
-    --ai-dark-text: #212529;
-    --ai-light-text: #6c757d;
-    --ai-border-color: #dee2e6;
+    --ai-primary-color: #3b82f6;
+    --ai-primary-hover-color: #2563eb;
+    --ai-secondary-color: #64748b;
+    --ai-secondary-hover-color: #475569;
+    --ai-success-color: #10b981;
+    --ai-danger-color: #ef4444;
+    --ai-light-bg: #f8fafc;
+    --ai-dark-text: #1e293b;
+    --ai-light-text: #64748b;
+    --ai-border-color: #e2e8f0;
     --ai-modal-bg: #ffffff;
-    --ai-diff-insert-bg: #e6ffed;
-    --ai-diff-insert-border: #b7f7c6;
-    --ai-diff-delete-bg: #ffeeee;
-    --ai-diff-delete-border: #fcc5c5;
+    --ai-diff-insert-bg: #dcfce7;
+    --ai-diff-insert-border: #86efac;
+    --ai-diff-delete-bg: #fee2e2;
+    --ai-diff-delete-border: #fca5a5;
     --ai-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
     --ai-monospace-font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
@@ -21,7 +21,6 @@
 /* Basic Modal Styling */
 .ai-editor-modal {
     display: none;
-    /* Hidden by default */
     position: fixed;
     z-index: 9999;
     left: 0;
@@ -29,12 +28,12 @@
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(0, 0, 0, 0.6);
-    /* Darker backdrop */
+    background-color: rgba(15, 23, 42, 0.7);
     justify-content: center;
     align-items: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(3px);
 }
 
 .ai-editor-modal.visible {
@@ -45,260 +44,174 @@
 .ai-editor-content {
     background-color: var(--ai-modal-bg);
     margin: auto;
-    padding: 25px 30px;
+    padding: 28px 32px;
     border: none;
-    /* Remove basic border */
     width: 85%;
-    max-width: 750px;
-    border-radius: 12px;
-    /* More rounded */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    /* Softer shadow */
+    max-width: 768px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     max-height: 90vh;
     font-family: var(--ai-font-family);
     color: var(--ai-dark-text);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(0);
+    overflow: auto;
 }
 
 .ai-editor-content h3 {
-    margin: 0 0 20px 0;
-    padding-bottom: 15px;
+    margin: 0 0 24px 0;
+    padding-bottom: 16px;
     border-bottom: 1px solid var(--ai-border-color);
-    font-size: 1.4em;
+    font-size: 1.5em;
     font-weight: 600;
     color: var(--ai-dark-text);
+    letter-spacing: -0.02em;
 }
 
 .ai-editor-diff-view {
     border: 1px solid var(--ai-border-color);
-    padding: 15px;
-    margin-bottom: 20px;
+    padding: 18px;
+    margin-bottom: 24px;
     background-color: var(--ai-light-bg);
     font-family: var(--ai-monospace-font-family);
     font-size: 0.95em;
-    line-height: 1.6;
+    line-height: 1.7;
     white-space: pre-wrap;
-    /* Wrap lines */
-    overflow-y: auto;
-    /* Scroll if needed */
+    overflow-x: auto;
     flex-grow: 1;
-    /* Allow diff view to take space */
     min-height: 150px;
-    /* Minimum height */
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
+    max-height: none;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+    word-break: break-word;
+    word-wrap: break-word;
 }
 
 .ai-editor-diff-view span {
     display: inline;
     padding: 2px 0;
     margin: 0;
+    font-size: 14px;
+    max-width: 100%;
+    overflow-wrap: break-word;
 }
 
 .ai-editor-diff-view .diff-equal {
-    /* No special styling needed */
+    color: var(--ai-dark-text);
 }
 
 .ai-editor-diff-view .diff-insert {
     background-color: var(--ai-diff-insert-bg);
-    border-bottom: 1px solid var(--ai-diff-insert-border);
+    border-bottom: 2px solid var(--ai-diff-insert-border);
     text-decoration: none;
+    padding: 1px 2px;
+    margin: 0 1px;
+    border-radius: 3px;
 }
 
 .ai-editor-diff-view .diff-delete {
     background-color: var(--ai-diff-delete-bg);
-    border-bottom: 1px solid var(--ai-diff-delete-border);
+    border-bottom: 2px solid var(--ai-diff-delete-border);
     text-decoration: line-through;
     color: var(--ai-danger-color);
-    opacity: 0.8;
-}
-
-.ai-editor-diff-view .diff-change input[type="checkbox"] {
-    margin-right: 5px;
-    vertical-align: middle;
-    /* Align checkbox nicely */
-}
-
-/* Styling for the input/prompt area */
-.ai-editor-prompt-area {
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-}
-
-.ai-editor-prompt-area label {
-    margin-bottom: 8px;
-    font-weight: 500;
-    color: var(--ai-light-text);
-}
-
-.ai-editor-prompt {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--ai-border-color);
-    border-radius: 6px;
-    box-sizing: border-box;
-    /* Include padding/border in width */
-    min-height: 70px;
-    font-family: var(--ai-font-family);
-    font-size: 1em;
-    line-height: 1.5;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.ai-editor-prompt:focus {
-    outline: none;
-    border-color: var(--ai-primary-color);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.ai-editor-status {
-    margin: 15px 0;
-    padding: 10px 15px;
-    border-radius: 6px;
-    display: none;
-    /* Hidden by default */
-    text-align: center;
-    font-size: 0.95em;
-}
-
-.ai-editor-status.info {
-    background-color: #e7f3fe;
-    color: #0c5460;
-    border: 1px solid #bde0fe;
-}
-
-.ai-editor-status.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-}
-
-.ai-editor-buttons {
-    display: flex;
-    justify-content: flex-end;
-    /* Align buttons to the right */
-    gap: 12px;
-    /* Space between buttons */
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid var(--ai-border-color);
-}
-
-.ai-editor-buttons button {
-    padding: 10px 18px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.95em;
-    font-weight: 500;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
-}
-
-.ai-editor-buttons button:active {
-    transform: translateY(1px);
-}
-
-.ai-editor-buttons .ai-editor-submit,
-.ai-editor-buttons .ai-editor-follow-up,
-.ai-editor-buttons .ai-editor-apply {
-    background-color: var(--ai-primary-color);
-    color: white;
-}
-
-.ai-editor-buttons .ai-editor-submit:disabled,
-.ai-editor-buttons .ai-editor-follow-up:disabled,
-.ai-editor-buttons .ai-editor-apply:disabled {
-    background-color: #a0cfff;
-    cursor: not-allowed;
-}
-
-.ai-editor-buttons .ai-editor-cancel {
-    background-color: var(--ai-secondary-color);
-    color: white;
-}
-
-.ai-editor-buttons .ai-editor-submit:hover,
-.ai-editor-buttons .ai-editor-follow-up:hover,
-.ai-editor-buttons .ai-editor-apply:hover {
-    background-color: var(--ai-primary-hover-color);
-    box-shadow: 0 2px 5px rgba(0, 123, 255, 0.2);
-}
-
-.ai-editor-buttons .ai-editor-cancel:hover {
-    background-color: var(--ai-secondary-hover-color);
-}
-
-.ai-editor-buttons button:disabled {
-    background-color: #adb5bd;
-    /* Use a neutral disabled color */
-    color: #f8f9fa;
-    cursor: not-allowed;
-    box-shadow: none;
+    opacity: 0.85;
+    padding: 1px 2px;
+    margin: 0 1px;
+    border-radius: 3px;
 }
 
 /* Wrapper for each segment */
 .diff-segment-wrapper {
     display: inline;
     position: relative;
-    padding: 2px 0px;
+    padding: 2px 0;
     border-radius: 4px;
-    transition: background-color 0.2s ease, opacity 0.2s ease;
-    margin-right: 1px;
+    transition: all 0.2s ease;
+    margin-right: 2px;
 }
 
 /* Style for delete/insert pairs */
 .diff-segment-wrapper.diff-pair {
     display: inline-block;
     border: 1px solid transparent;
-    border-radius: 5px;
-    padding: 1px 4px;
-    margin-bottom: 3px;
-    background-color: transparent;
+    border-radius: 6px;
+    padding: 3px 5px;
+    margin-bottom: 8px;
+    background-color: rgba(241, 245, 249, 0.5);
+    flex-direction: column;
+    vertical-align: top;
+    max-width: 100%;
+    word-break: break-word;
 }
 
 /* Remove individual borders/bg on spans within a pair */
 .diff-pair .diff-delete,
 .diff-pair .diff-insert {
+    display: block;
     border: none;
-    background-color: transparent;
-    padding: 0;
-    margin: 0 1px;
+    padding: 2px 4px;
+    margin: 2px 0;
+    border-radius: 3px;
+    word-break: break-word;
+    word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
-/* Controls container - NOW ALWAYS VISIBLE AND INLINE */
+.diff-pair .diff-delete {
+    background-color: var(--ai-diff-delete-bg);
+    border-left: 3px solid var(--ai-diff-delete-border);
+    margin-bottom: 4px;
+}
+
+.diff-pair .diff-insert {
+    background-color: var(--ai-diff-insert-bg);
+    border-left: 3px solid var(--ai-diff-insert-border);
+}
+
+/* Controls container */
 .diff-controls {
-    display: inline-flex;
-    /* Always visible as flex container */
-    vertical-align: middle;
-    /* Align nicely with text */
-    margin-left: 8px;
-    /* Space between text and controls */
-    gap: 4px;
-    /* Space between buttons */
+    display: flex;
+    margin-top: 4px;
+    margin-bottom: 2px;
+    justify-content: flex-end;
+    gap: 6px;
+    padding: 2px;
 }
 
-/* Accept/Reject buttons */
+/* Styling for accept/reject buttons */
 .diff-action-button {
     background: none;
     border: none;
-    padding: 2px;
+    padding: 0;
     margin: 0;
     cursor: pointer;
     display: flex;
-    /* Ensures button is visible */
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    transition: background-color 0.2s ease;
+    width: 24px;
+    height: 24px;
+    transition: all 0.15s ease;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+    background-color: white;
 }
 
 .diff-action-button svg {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
+}
+
+.diff-action-button.accept {
+    color: var(--ai-success-color);
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.diff-action-button.reject {
+    color: var(--ai-danger-color);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2);
 }
 
 .diff-action-button.accept svg {
@@ -310,13 +223,142 @@
 }
 
 .diff-action-button:hover {
-    background-color: #eee;
+    transform: scale(1.1);
+    background-color: #f9fafb;
+}
+
+.diff-action-button.accept:hover {
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.4), 0 2px 4px rgba(16, 185, 129, 0.1);
+}
+
+.diff-action-button.reject:hover {
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4), 0 2px 4px rgba(239, 68, 68, 0.1);
+}
+
+.diff-action-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ai-primary-color);
 }
 
 /* Make sure the initially hidden button occupies no space */
 .diff-action-button[style*="display: none"] {
     display: none !important;
-    /* Override inline-flex if needed */
+}
+
+/* Styling for the input/prompt area */
+.ai-editor-prompt-area {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.ai-editor-prompt-area label {
+    margin-bottom: 10px;
+    font-weight: 500;
+    color: var(--ai-dark-text);
+    font-size: 14px;
+}
+
+.ai-editor-prompt {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--ai-border-color);
+    border-radius: 8px;
+    box-sizing: border-box;
+    min-height: 80px;
+    font-family: var(--ai-font-family);
+    font-size: 15px;
+    line-height: 1.5;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+    resize: vertical;
+}
+
+.ai-editor-prompt:focus {
+    outline: none;
+    border-color: var(--ai-primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.ai-editor-status {
+    margin: 15px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    display: none;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.ai-editor-status.info {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.ai-editor-status.error {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fee2e2;
+}
+
+.ai-editor-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--ai-border-color);
+}
+
+.ai-editor-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+}
+
+.ai-editor-buttons button:active {
+    transform: translateY(1px);
+}
+
+.ai-editor-buttons .ai-editor-submit,
+.ai-editor-buttons .ai-editor-follow-up,
+.ai-editor-buttons .ai-editor-apply {
+    background-color: var(--ai-primary-color);
+    color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ai-editor-buttons .ai-editor-submit:disabled,
+.ai-editor-buttons .ai-editor-follow-up:disabled,
+.ai-editor-buttons .ai-editor-apply:disabled {
+    background-color: #cbd5e1;
+    color: #f8fafc;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.8;
+}
+
+.ai-editor-buttons .ai-editor-cancel {
+    background-color: var(--ai-secondary-color);
+    color: white;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ai-editor-buttons .ai-editor-submit:hover,
+.ai-editor-buttons .ai-editor-follow-up:hover,
+.ai-editor-buttons .ai-editor-apply:hover {
+    background-color: var(--ai-primary-hover-color);
+    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
+}
+
+.ai-editor-buttons .ai-editor-cancel:hover {
+    background-color: var(--ai-secondary-hover-color);
 }
 
 /* Styling for accepted/rejected states */
@@ -334,6 +376,7 @@
 /* Pair specific accepted state */
 .diff-segment-wrapper.diff-pair.accepted {
     border-color: transparent;
+    position: relative;
 }
 
 .diff-segment-wrapper.diff-pair.accepted .diff-insert {
@@ -347,8 +390,8 @@
 }
 
 .diff-segment-wrapper.rejected .diff-insert {
-    background-color: #eee;
-    border-color: #ddd;
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
     text-decoration: line-through;
     opacity: 0.5;
 }
@@ -357,15 +400,14 @@
     background-color: transparent;
     border-color: transparent;
     text-decoration: none;
-    color: var(--ai-light-text);
+    color: var(--ai-dark-text);
     opacity: 1;
 }
 
 /* Pair specific rejected state */
 .diff-segment-wrapper.diff-pair.rejected {
-    background-color: #f8f9fa;
-    /* Light bg to show original kept */
-    border-color: #eee;
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
 }
 
 .diff-segment-wrapper.diff-pair.rejected .diff-insert {
@@ -378,6 +420,5 @@
     background-color: transparent;
     text-decoration: none;
     color: var(--ai-dark-text);
-    /* Show original text clearly */
     opacity: 1;
 }
