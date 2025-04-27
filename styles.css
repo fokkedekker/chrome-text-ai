@@ -1,3 +1,187 @@
+:root {
+    --ai-primary-color: #3b82f6;
+    --ai-primary-hover-color: #2563eb;
+    --ai-secondary-color: #64748b;
+    --ai-secondary-hover-color: #475569;
+    --ai-success-color: #10b981;
+    --ai-danger-color: #ef4444;
+    --ai-light-bg: #f8fafc;
+    --ai-dark-text: #1e293b;
+    --ai-light-text: #64748b;
+    --ai-border-color: #e2e8f0;
+    --ai-modal-bg: #ffffff;
+    --ai-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+}
+
+body {
+    font-family: var(--ai-font-family);
+    color: var(--ai-dark-text);
+    margin: 0;
+    background-color: var(--ai-light-bg);
+}
+
+/* === Popup Styling === */
+.popup-container {
+    padding: 20px 24px;
+    min-width: 280px;
+    background-color: var(--ai-modal-bg);
+}
+
+.popup-container h3 {
+    margin: 0 0 16px 0;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: var(--ai-dark-text);
+    border-bottom: 1px solid var(--ai-border-color);
+    padding-bottom: 10px;
+}
+
+.popup-container .instructions {
+    font-size: 0.95em;
+    line-height: 1.6;
+    color: var(--ai-light-text);
+    margin-bottom: 20px;
+}
+
+.popup-container .instructions ol {
+    padding-left: 20px;
+    margin-top: 8px;
+}
+
+.popup-container .instructions strong {
+    font-weight: 600;
+    color: var(--ai-dark-text);
+}
+
+.popup-container .options-button {
+    display: inline-block;
+    width: 100%;
+    padding: 10px 16px;
+    background-color: var(--ai-secondary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.popup-container .options-button:hover {
+    background-color: var(--ai-secondary-hover-color);
+}
+
+/* === Options Page Styling === */
+.options-page-body {
+    padding: 30px;
+}
+
+.options-page-body .container {
+    max-width: 650px;
+    margin: 20px auto;
+    background-color: var(--ai-modal-bg);
+    padding: 28px 32px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.options-page-body h1 {
+    margin: 0 0 24px 0;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--ai-border-color);
+    font-size: 1.6em;
+    font-weight: 600;
+    color: var(--ai-dark-text);
+    letter-spacing: -0.02em;
+}
+
+.options-page-body .form-group {
+    margin-bottom: 24px;
+}
+
+.options-page-body label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--ai-dark-text);
+}
+
+.options-page-body input[type="password"],
+.options-page-body textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--ai-border-color);
+    border-radius: 8px;
+    font-size: 0.95em;
+    font-family: var(--ai-font-family);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.options-page-body input[type="password"]:focus,
+.options-page-body textarea:focus {
+    outline: none;
+    border-color: var(--ai-primary-color);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.options-page-body textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.options-page-body small {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.85em;
+    color: var(--ai-light-text);
+}
+
+.options-page-body .save-button {
+    padding: 10px 20px;
+    background: var(--ai-primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.options-page-body .save-button:hover {
+    background: var(--ai-primary-hover-color);
+}
+
+.options-page-body .status {
+    margin-top: 15px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    display: none;
+    text-align: center;
+}
+
+.options-page-body .status.success {
+    background: #dcfce7;
+    /* Lighter green */
+    color: #166534;
+    /* Darker green text */
+    border: 1px solid #86efac;
+    /* Green border */
+}
+
+.options-page-body .status.error {
+    background: #fee2e2;
+    /* Lighter red */
+    color: #991b1b;
+    /* Darker red text */
+    border: 1px solid #fca5a5;
+    /* Red border */
+}
+
 .ai-editor-modal {
     position: fixed;
     top: 0;

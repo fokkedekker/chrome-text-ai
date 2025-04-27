@@ -3,73 +3,24 @@
 
 <head>
     <title>AI Text Editor Settings</title>
-    <style>
-        body {
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-
-        .save-button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .save-button:hover {
-            background: #0056b3;
-        }
-
-        .status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 
-<body>
+<body class="options-page-body">
     <div class="container">
         <h1>AI Text Editor Settings</h1>
         <div class="form-group">
             <label for="apiKey">SambaNova API Key:</label>
-            <input type="text" id="apiKey" placeholder="Enter your API key">
+            <input type="password" id="apiKey" placeholder="Enter your SambaNova API key">
+            <small>Required for the extension to communicate with the AI. Your key is stored securely in browser
+                storage.</small>
+        </div>
+        <div class="form-group">
+            <label for="customInstructions">Persistent Custom Instructions (Optional):</label>
+            <textarea id="customInstructions" rows="6"
+                placeholder="e.g., Always maintain a formal tone. Prefer concise language. Avoid jargon."></textarea>
+            <small>Enter instructions here that you want the AI to follow *every time* it edits text for you. These are
+                combined with the specific instructions you give in the editor pop-up.</small>
         </div>
         <button id="save" class="save-button">Save Settings</button>
         <div id="status" class="status"></div>

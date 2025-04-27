@@ -1,8 +1,12 @@
 // Load saved settings
 document.addEventListener('DOMContentLoaded', () => {
-    chrome.storage.sync.get(['apiKey'], (result) => {
+    // Load API Key and Custom Instructions
+    chrome.storage.sync.get(['apiKey', 'customInstructions'], (result) => {
         if (result.apiKey) {
             document.getElementById('apiKey').value = result.apiKey;
+        }
+        if (result.customInstructions) {
+            document.getElementById('customInstructions').value = result.customInstructions;
         }
     });
 });
@@ -10,14 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
 // Save settings
 document.getElementById('save').addEventListener('click', () => {
     const apiKey = document.getElementById('apiKey').value.trim();
+    const customInstructions = document.getElementById('customInstructions').value.trim();
     const status = document.getElementById('status');
 
+    // API Key is still required
     if (!apiKey) {
         showStatus('Please enter an API key', 'error');
         return;
     }
 
-    chrome.storage.sync.set({ apiKey }, () => {
+    // Save both settings
+    chrome.storage.sync.set({ apiKey, customInstructions }, () => {
         showStatus('Settings saved successfully!', 'success');
     });
 });
