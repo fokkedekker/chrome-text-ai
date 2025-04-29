@@ -1,21 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
-    --ai-primary-color: #3b82f6;
-    --ai-primary-hover-color: #2563eb;
+    --ai-primary-color: #4f46e5;
+    --ai-primary-hover-color: #4338ca;
     --ai-secondary-color: #64748b;
     --ai-secondary-hover-color: #475569;
     --ai-success-color: #10b981;
     --ai-danger-color: #ef4444;
-    --ai-light-bg: #f8fafc;
-    --ai-dark-text: #1e293b;
-    --ai-light-text: #64748b;
-    --ai-border-color: #e2e8f0;
+    --ai-light-bg: #f9fafb;
+    --ai-dark-text: #111827;
+    --ai-light-text: #6b7280;
+    --ai-border-color: #e5e7eb;
     --ai-modal-bg: #ffffff;
-    --ai-diff-insert-bg: #dcfce7;
-    --ai-diff-insert-border: #86efac;
-    --ai-diff-delete-bg: #fee2e2;
-    --ai-diff-delete-border: #fca5a5;
-    --ai-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    --ai-monospace-font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --ai-diff-insert-bg: #ecfdf5;
+    --ai-diff-insert-border: #a7f3d0;
+    --ai-diff-delete-bg: #fef2f2;
+    --ai-diff-delete-border: #fecaca;
+    --ai-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --ai-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --ai-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --ai-transition: all 0.2s ease;
+    --ai-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    --ai-monospace-font-family: 'SF Mono', SFMono-Regular, ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 /* Basic Modal Styling */
@@ -28,12 +34,12 @@
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(15, 23, 42, 0.7);
+    background-color: rgba(15, 23, 42, 0.75);
     justify-content: center;
     align-items: center;
     opacity: 0;
     transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(4px);
 }
 
 .ai-editor-modal.visible {
@@ -44,48 +50,53 @@
 .ai-editor-content {
     background-color: var(--ai-modal-bg);
     margin: auto;
-    padding: 28px 32px;
+    padding: 32px 36px;
     border: none;
     width: 85%;
     max-width: 768px;
     border-radius: 16px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--ai-shadow-lg);
     display: flex;
     flex-direction: column;
     max-height: 90vh;
     font-family: var(--ai-font-family);
     color: var(--ai-dark-text);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    transform: translateY(0);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(20px);
     overflow: auto;
+    scroll-behavior: smooth;
+}
+
+.ai-editor-modal.visible .ai-editor-content {
+    transform: translateY(0);
 }
 
 .ai-editor-content h3 {
-    margin: 0 0 24px 0;
+    margin: 0 0 28px 0;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--ai-border-color);
-    font-size: 1.5em;
+    font-size: 1.25rem;
     font-weight: 600;
     color: var(--ai-dark-text);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
 }
 
 .ai-editor-diff-view {
     border: 1px solid var(--ai-border-color);
-    padding: 18px;
+    padding: 20px;
     margin-bottom: 24px;
     background-color: var(--ai-light-bg);
     font-family: var(--ai-monospace-font-family);
-    font-size: 0.95em;
+    font-size: 0.9rem;
     line-height: 1.7;
     white-space: pre-wrap;
     overflow-x: auto;
     flex-grow: 1;
     min-height: 150px;
     max-height: none;
-    border-radius: 10px;
-    transition: all 0.2s ease;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+    border-radius: 12px;
+    transition: var(--ai-transition);
+    box-shadow: var(--ai-shadow-sm);
     word-break: break-word;
     word-wrap: break-word;
 }
@@ -94,7 +105,7 @@
     display: inline;
     padding: 2px 0;
     margin: 0;
-    font-size: 14px;
+    font-size: 0.9rem;
     max-width: 100%;
     overflow-wrap: break-word;
 }
@@ -107,18 +118,19 @@
     background-color: var(--ai-diff-insert-bg);
     border-bottom: 2px solid var(--ai-diff-insert-border);
     text-decoration: none;
-    padding: 1px 2px;
+    padding: 2px 3px;
     margin: 0 1px;
     border-radius: 3px;
+    color: #047857;
 }
 
 .ai-editor-diff-view .diff-delete {
     background-color: var(--ai-diff-delete-bg);
     border-bottom: 2px solid var(--ai-diff-delete-border);
     text-decoration: line-through;
-    color: var(--ai-danger-color);
+    color: #b91c1c;
     opacity: 0.85;
-    padding: 1px 2px;
+    padding: 2px 3px;
     margin: 0 1px;
     border-radius: 3px;
 }
@@ -129,7 +141,7 @@
     position: relative;
     padding: 2px 0;
     border-radius: 4px;
-    transition: all 0.2s ease;
+    transition: var(--ai-transition);
     margin-right: 2px;
 }
 
@@ -137,14 +149,15 @@
 .diff-segment-wrapper.diff-pair {
     display: inline-block;
     border: 1px solid transparent;
-    border-radius: 6px;
-    padding: 3px 5px;
-    margin-bottom: 8px;
-    background-color: rgba(241, 245, 249, 0.5);
+    border-radius: 8px;
+    padding: 4px 6px;
+    margin-bottom: 10px;
+    background-color: #f1f5f9;
     flex-direction: column;
     vertical-align: top;
     max-width: 100%;
     word-break: break-word;
+    box-shadow: var(--ai-shadow-sm);
 }
 
 /* Remove individual borders/bg on spans within a pair */
@@ -152,9 +165,9 @@
 .diff-pair .diff-insert {
     display: block;
     border: none;
-    padding: 2px 4px;
-    margin: 2px 0;
-    border-radius: 3px;
+    padding: 3px 6px;
+    margin: 3px 0;
+    border-radius: 4px;
     word-break: break-word;
     word-wrap: break-word;
     white-space: pre-wrap;
@@ -163,7 +176,7 @@
 .diff-pair .diff-delete {
     background-color: var(--ai-diff-delete-bg);
     border-left: 3px solid var(--ai-diff-delete-border);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .diff-pair .diff-insert {
@@ -174,10 +187,10 @@
 /* Controls container */
 .diff-controls {
     display: flex;
-    margin-top: 4px;
-    margin-bottom: 2px;
+    margin-top: 5px;
+    margin-bottom: 3px;
     justify-content: flex-end;
-    gap: 6px;
+    gap: 8px;
     padding: 2px;
 }
 
@@ -188,20 +201,20 @@
     padding: 0;
     margin: 0;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    transition: all 0.15s ease;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    transition: var(--ai-transition);
+    box-shadow: var(--ai-shadow-sm);
     background-color: white;
 }
 
 .diff-action-button svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
 }
 
 .diff-action-button.accept {
@@ -223,8 +236,9 @@
 }
 
 .diff-action-button:hover {
-    transform: scale(1.1);
+    transform: translateY(-1px);
     background-color: #f9fafb;
+    box-shadow: var(--ai-shadow-md);
 }
 
 .diff-action-button.accept:hover {
@@ -247,7 +261,7 @@
 
 /* Styling for the input/prompt area */
 .ai-editor-prompt-area {
-    margin-bottom: 24px;
+    margin-bottom: 28px;
     display: flex;
     flex-direction: column;
 }
@@ -256,37 +270,37 @@
     margin-bottom: 10px;
     font-weight: 500;
     color: var(--ai-dark-text);
-    font-size: 14px;
+    font-size: 0.95rem;
 }
 
 .ai-editor-prompt {
     width: 100%;
-    padding: 12px 14px;
+    padding: 14px 16px;
     border: 1px solid var(--ai-border-color);
-    border-radius: 8px;
+    border-radius: 10px;
     box-sizing: border-box;
-    min-height: 80px;
+    min-height: 120px;
     font-family: var(--ai-font-family);
-    font-size: 15px;
+    font-size: 0.95rem;
     line-height: 1.5;
-    transition: all 0.2s ease;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: var(--ai-transition);
+    box-shadow: var(--ai-shadow-sm);
     resize: vertical;
 }
 
 .ai-editor-prompt:focus {
     outline: none;
     border-color: var(--ai-primary-color);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
 }
 
 .ai-editor-status {
-    margin: 15px 0;
-    padding: 12px 16px;
-    border-radius: 8px;
+    margin: 16px 0;
+    padding: 14px 18px;
+    border-radius: 10px;
     display: none;
     text-align: center;
-    font-size: 14px;
+    font-size: 0.95rem;
     font-weight: 500;
 }
 
@@ -302,12 +316,18 @@
     border: 1px solid #fee2e2;
 }
 
+.ai-editor-status.success {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
 .ai-editor-buttons {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 24px;
-    padding-top: 18px;
+    margin-top: 28px;
+    padding-top: 20px;
     border-top: 1px solid var(--ai-border-color);
 }
 
@@ -316,9 +336,9 @@
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: var(--ai-transition);
     letter-spacing: 0.01em;
 }
 
@@ -331,34 +351,36 @@
 .ai-editor-buttons .ai-editor-apply {
     background-color: var(--ai-primary-color);
     color: white;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--ai-shadow-sm);
 }
 
 .ai-editor-buttons .ai-editor-submit:disabled,
 .ai-editor-buttons .ai-editor-follow-up:disabled,
 .ai-editor-buttons .ai-editor-apply:disabled {
-    background-color: #cbd5e1;
-    color: #f8fafc;
+    background-color: #e5e7eb;
+    color: #9ca3af;
     cursor: not-allowed;
     box-shadow: none;
-    opacity: 0.8;
+    transform: none;
 }
 
 .ai-editor-buttons .ai-editor-cancel {
-    background-color: var(--ai-secondary-color);
-    color: white;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    background-color: transparent;
+    color: var(--ai-secondary-color);
+    border: 1px solid var(--ai-border-color);
 }
 
-.ai-editor-buttons .ai-editor-submit:hover,
-.ai-editor-buttons .ai-editor-follow-up:hover,
-.ai-editor-buttons .ai-editor-apply:hover {
+.ai-editor-buttons .ai-editor-submit:hover:not(:disabled),
+.ai-editor-buttons .ai-editor-follow-up:hover:not(:disabled),
+.ai-editor-buttons .ai-editor-apply:hover:not(:disabled) {
     background-color: var(--ai-primary-hover-color);
-    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
+    transform: translateY(-1px);
+    box-shadow: var(--ai-shadow-md);
 }
 
 .ai-editor-buttons .ai-editor-cancel:hover {
-    background-color: var(--ai-secondary-hover-color);
+    background-color: #f3f4f6;
+    color: var(--ai-dark-text);
 }
 
 /* Styling for accepted/rejected states */
@@ -377,6 +399,7 @@
 .diff-segment-wrapper.diff-pair.accepted {
     border-color: transparent;
     position: relative;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.1);
 }
 
 .diff-segment-wrapper.diff-pair.accepted .diff-insert {
@@ -408,6 +431,7 @@
 .diff-segment-wrapper.diff-pair.rejected {
     background-color: #f8fafc;
     border-color: #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .diff-segment-wrapper.diff-pair.rejected .diff-insert {
@@ -437,37 +461,32 @@
 /* Version Navigation Styles */
 .ai-editor-version-nav {
     display: flex;
-    /* Use flexbox for alignment */
     justify-content: center;
-    /* Center items horizontally */
     align-items: center;
-    /* Center items vertically */
-    padding: 8px 0;
+    padding: 10px 0;
     margin-top: 10px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--ai-border-color);
+    gap: 12px;
 }
 
 #ai-editor-version-display {
-    margin: 0 15px;
-    /* Spacing around the text */
-    font-size: 0.9em;
-    color: #555;
+    font-size: 0.9rem;
+    color: var(--ai-light-text);
 }
 
 .ai-editor-nav-button {
     background: none;
-    border: 1px solid #ccc;
-    color: #333;
-    padding: 3px 8px;
-    border-radius: 4px;
+    border: 1px solid var(--ai-border-color);
+    color: var(--ai-secondary-color);
+    padding: 4px 8px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 1em;
-    line-height: 1;
+    transition: var(--ai-transition);
 }
 
 .ai-editor-nav-button:hover:not(:disabled) {
-    background-color: #f0f0f0;
-    border-color: #bbb;
+    background-color: #f3f4f6;
+    color: var(--ai-dark-text);
 }
 
 .ai-editor-nav-button:disabled {
@@ -477,6 +496,6 @@
 
 /* Ensure diff container can hold the nav */
 #ai-editor-diff-container {
-    /* Add some padding at the bottom if needed */
-    padding-bottom: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
 }
