@@ -422,3 +422,61 @@
     color: var(--ai-dark-text);
     opacity: 1;
 }
+
+/* Styling for Read-Only Diff View */
+.ai-editor-diff-view.read-only-diff .diff-action-button {
+    display: none !important;
+    /* Hide accept/reject buttons */
+}
+
+.ai-editor-diff-view.read-only-diff .diff-segment-wrapper:hover .diff-controls {
+    opacity: 0;
+    /* Hide controls area on hover for read-only */
+}
+
+/* Version Navigation Styles */
+.ai-editor-version-nav {
+    display: flex;
+    /* Use flexbox for alignment */
+    justify-content: center;
+    /* Center items horizontally */
+    align-items: center;
+    /* Center items vertically */
+    padding: 8px 0;
+    margin-top: 10px;
+    border-top: 1px solid #eee;
+}
+
+#ai-editor-version-display {
+    margin: 0 15px;
+    /* Spacing around the text */
+    font-size: 0.9em;
+    color: #555;
+}
+
+.ai-editor-nav-button {
+    background: none;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+    line-height: 1;
+}
+
+.ai-editor-nav-button:hover:not(:disabled) {
+    background-color: #f0f0f0;
+    border-color: #bbb;
+}
+
+.ai-editor-nav-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Ensure diff container can hold the nav */
+#ai-editor-diff-container {
+    /* Add some padding at the bottom if needed */
+    padding-bottom: 10px;
+}

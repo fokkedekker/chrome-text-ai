@@ -21,9 +21,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     } else if (request.action === 'request-ai-edit') {
         processFollowUpWithSambaNova(request.originalText, request.diffHistory, request.prompt)
             .then(diffData => {
+                console.log("[Background] Sending follow-up response (success):", { success: true, diff: diffData.diff_segments });
                 sendResponse({ success: true, diff: diffData.diff_segments });
             })
             .catch(error => {
+                console.log("[Background] Sending follow-up response (failure):", { success: false, error: error.message });
                 sendResponse({ success: false, error: error.message });
             });
         return true;

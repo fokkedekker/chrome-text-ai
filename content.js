@@ -1,12 +1,17 @@
 class AIEditor {
     constructor() {
-        this.selectedContext = null;
         this.editorModal = null;
-        this.currentDiffSegments = []; // Store the latest diff segments from AI
+        this.selectedContext = null;
+        this.currentDiffSegments = []; // Still used for interaction on the LATEST version
+        this.editHistory = []; // Array to store arrays of diff segments
+        this.currentVersionIndex = -1; // Index of the currently viewed version in editHistory
         this.init();
     }
 
     init() {
+        // Reset history on init
+        this.editHistory = [];
+        this.currentVersionIndex = -1;
         // Listen for messages from popup and background
         chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             try {
@@ -60,6 +65,12 @@ class AIEditor {
                 <div id="ai-editor-diff-container" style="display: none;">
                      <label>Proposed Changes (Use buttons to accept/reject):</label>
                      <div class="ai-editor-diff-view" id="ai-diff-view"></div>
+                    <!-- Version Navigation -->
+                    <div class="ai-editor-version-nav" id="ai-version-nav" style="display: none;">
+                        <button id="ai-editor-prev-version" class="ai-editor-nav-button" title="Previous Version">&#x25C0;</button> 
+                        <span id="ai-editor-version-display">Version X of Y</span>
+                        <button id="ai-editor-next-version" class="ai-editor-nav-button" title="Next Version">&#x25B6;</button>
+                    </div>
                 </div>
                 
                 <div class="ai-editor-status" id="ai-editor-status"></div>
@@ -85,6 +96,8 @@ class AIEditor {
         const applyButton = this.editorModal.querySelector('#ai-editor-apply');
         const cancelButton = this.editorModal.querySelector('#ai-editor-cancel');
         const promptInput = this.editorModal.querySelector('#ai-editor-prompt-input');
+        const prevButton = this.editorModal.querySelector('#ai-editor-prev-version');
+        const nextButton = this.editorModal.querySelector('#ai-editor-next-version');
 
         submitButton.addEventListener('click', () => {
             console.log("Submit button clicked, calling handleInitialSubmit...");
@@ -93,6 +106,10 @@ class AIEditor {
         followUpButton.addEventListener('click', () => this.handleFollowUpSubmit());
         applyButton.addEventListener('click', () => this.handleApplyChanges());
         cancelButton.addEventListener('click', () => this.closeModal());
+
+        // Add listeners for version navigation
+        prevButton.addEventListener('click', () => this.navigateVersion(-1));
+        nextButton.addEventListener('click', () => this.navigateVersion(1));
     }
 
     addDiffViewEventListeners() {
@@ -187,6 +204,7 @@ class AIEditor {
     // --- Diff Rendering and Interaction ---
 
     renderDiff(diffSegments) {
+        console.log(`renderDiff called with ${diffSegments ? diffSegments.length : 0} segments. First segment:`, diffSegments ? JSON.stringify(diffSegments[0]) : 'N/A'); // Log entry
         if (!this.editorModal) return;
         const diffView = this.editorModal.querySelector('#ai-diff-view');
         diffView.innerHTML = ''; // Clear previous diff
@@ -195,7 +213,7 @@ class AIEditor {
         this.currentDiffSegments = diffSegments.map((segment, index) => ({
             ...segment,
             originalIndex: index, // Keep track of original index before processing
-            accepted: true,
+            accepted: segment.accepted,
             isChangePair: false,
             linkedSegmentIndex: -1
         }));
@@ -274,13 +292,17 @@ class AIEditor {
         const acceptSVG = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z"></path></svg>`;
         const rejectSVG = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"></path></svg>`;
 
+        const segmentData = this.editHistory[this.currentVersionIndex]?.[segmentIndex];
+        const isInitiallyAccepted = segmentData ? segmentData.accepted : true; // Default to true if not found, though it should be
+
         const acceptButton = document.createElement('button');
         acceptButton.innerHTML = acceptSVG;
         acceptButton.title = isPair ? 'Accept replacement' : 'Accept change';
         acceptButton.classList.add('diff-action-button', 'accept');
         acceptButton.dataset.segmentIndex = segmentIndex;
         acceptButton.dataset.action = 'accept';
-        acceptButton.style.display = 'none'; // Initially hidden (since default is accepted)
+        // Show Accept button only if the segment is currently REJECTED
+        acceptButton.style.display = isInitiallyAccepted ? 'none' : 'inline-flex';
 
         const rejectButton = document.createElement('button');
         rejectButton.innerHTML = rejectSVG;
@@ -288,7 +310,8 @@ class AIEditor {
         rejectButton.classList.add('diff-action-button', 'reject');
         rejectButton.dataset.segmentIndex = segmentIndex;
         rejectButton.dataset.action = 'reject';
-        // rejectButton starts visible by default
+        // Show Reject button only if the segment is currently ACCEPTED
+        rejectButton.style.display = isInitiallyAccepted ? 'inline-flex' : 'none';
 
         controls.appendChild(acceptButton);
         controls.appendChild(rejectButton);
@@ -296,20 +319,27 @@ class AIEditor {
     }
 
     handleDiffAction(segmentIndex, action) {
-        const segment = this.currentDiffSegments[segmentIndex];
+        // Only allow actions on the latest version
+        if (this.currentVersionIndex !== this.editHistory.length - 1) {
+            console.log("Diff actions only allowed on the latest version.");
+            return;
+        }
+
+        const diffSegments = this.editHistory[this.currentVersionIndex]; // Use history
+        const segment = diffSegments[segmentIndex]; // Get segment from history
         if (!segment || (segment.type !== 'insert' && segment.type !== 'delete')) return;
 
         const isAccepted = (action === 'accept');
         const linkedSegmentIndex = segment.linkedSegmentIndex;
 
-        // Update state for the primary segment
+        // Update state for the primary segment IN HISTORY
         segment.accepted = isAccepted;
         const segmentWrapper = this.editorModal.querySelector(`.diff-segment-wrapper[data-segment-index="${segmentIndex}"]`);
         if (!segmentWrapper) return;
 
-        // Update state for the linked segment if it exists
-        if (segment.isChangePair && linkedSegmentIndex !== -1 && this.currentDiffSegments[linkedSegmentIndex]) {
-            this.currentDiffSegments[linkedSegmentIndex].accepted = isAccepted;
+        // Update state for the linked segment if it exists IN HISTORY
+        if (segment.isChangePair && linkedSegmentIndex !== -1 && diffSegments[linkedSegmentIndex]) {
+            diffSegments[linkedSegmentIndex].accepted = isAccepted;
         }
 
         // Update visuals for the wrapper and toggle button visibility
@@ -329,10 +359,11 @@ class AIEditor {
         }
     }
 
-    getAcceptedDiffText() {
-        if (!this.currentDiffSegments) return '';
+    getAcceptedDiffText(versionIndex) { // Accepts versionIndex
+        const segmentsToUse = this.editHistory[versionIndex];
+        if (!segmentsToUse) return '';
         let final_text = '';
-        this.currentDiffSegments.forEach((segment) => {
+        segmentsToUse.forEach((segment) => {
             if (segment.type === 'equal') {
                 final_text += segment.text;
             } else if (segment.type === 'insert') {
@@ -340,7 +371,8 @@ class AIEditor {
                     final_text += segment.text;
                 }
             } else if (segment.type === 'delete') {
-                if (!segment.accepted) { // Include text of rejected deletions
+                // For deletions, we include the text ONLY if the deletion was REJECTED
+                if (!segment.accepted) {
                     final_text += segment.text;
                 }
             }
@@ -380,7 +412,12 @@ class AIEditor {
 
             // Updated check for the new response structure
             if (response.success && response.diff) {
-                this.renderDiff(response.diff); // Use response.diff directly
+                console.log("Received success response with diff data (initial):", JSON.stringify(response.diff)); // Log received data
+                // Initialize accepted state for the first version
+                const initialSegments = response.diff.map(seg => ({ ...seg, accepted: true }));
+                this.editHistory = [initialSegments]; // Start new history with initialized segments
+                this.currentVersionIndex = 0;
+                this.updateVersionView(this.currentVersionIndex); // Render the new version
                 this.showStatus('Suggestions received. Review the changes.', 'info');
                 // Show Follow-up and Apply buttons, hide initial submit
                 this.editorModal.querySelector('#ai-editor-submit').style.display = 'none';
@@ -448,7 +485,12 @@ class AIEditor {
             console.log("Received follow-up diff data:", response.diff);
 
             if (response.diff) {
-                this.renderDiff(response.diff);
+                console.log("Received success response with diff data (follow-up):", JSON.stringify(response.diff)); // Log received data
+                // Initialize accepted state for the follow-up version
+                const followUpSegments = response.diff.map(seg => ({ ...seg, accepted: true }));
+                this.editHistory.push(followUpSegments); // Add initialized segments to history
+                this.currentVersionIndex = this.editHistory.length - 1;
+                this.updateVersionView(this.currentVersionIndex); // Render the new version
                 this.showStatus('Follow-up suggestions received. Review the changes.', 'info');
                 // Keep Follow-up and Apply buttons visible
             } else {
@@ -464,12 +506,15 @@ class AIEditor {
     }
 
     handleApplyChanges() {
-        if (!this.selectedContext) {
-            this.showStatus('Error: Original selection context lost.', 'error');
+        // Remove the check restricting application to only the latest version
+        if (!this.selectedContext /*|| this.currentVersionIndex !== this.editHistory.length - 1*/) {
+            // Update error message slightly
+            this.showStatus('Error: Original selection context lost or no version selected.', 'error');
             return;
         }
 
-        const finalText = this.getAcceptedDiffText();
+        // Use the currently viewed version index (already correct)
+        const finalText = this.getAcceptedDiffText(this.currentVersionIndex);
 
         const replacement = {
             start: 0,
@@ -609,6 +654,66 @@ class AIEditor {
         } catch (error) {
             console.error('Error applying final replacements:', error);
             throw error;
+        }
+    }
+
+    navigateVersion(direction) {
+        if (!this.editHistory || this.editHistory.length === 0) return;
+        const newIndex = this.currentVersionIndex + direction;
+        if (newIndex >= 0 && newIndex < this.editHistory.length) {
+            this.updateVersionView(newIndex);
+        }
+    }
+
+    updateVersionView(index) {
+        console.log(`updateVersionView called for index: ${index}`); // Log entry
+        if (index < 0 || index >= this.editHistory.length) {
+            console.error("Invalid version index:", index);
+            return;
+        }
+        this.currentVersionIndex = index;
+        const diffSegments = this.editHistory[this.currentVersionIndex];
+        console.log(`Rendering version ${this.currentVersionIndex + 1}. Segments:`, JSON.stringify(diffSegments)); // Log segments being rendered
+
+        // Render the diff for the selected version
+        this.renderDiff(diffSegments);
+
+        const versionNav = this.editorModal.querySelector('#ai-version-nav');
+        const versionDisplay = this.editorModal.querySelector('#ai-editor-version-display');
+        const prevButton = this.editorModal.querySelector('#ai-editor-prev-version');
+        const nextButton = this.editorModal.querySelector('#ai-editor-next-version');
+
+        if (this.editHistory.length > 1) {
+            console.log(`updateVersionView: History length is ${this.editHistory.length} (> 1). Should show nav.`); // Log if block
+            if (versionNav) {
+                versionNav.style.display = 'flex';
+                console.log(`updateVersionView: Set versionNav display to flex.`);
+            } else {
+                console.error("updateVersionView: Could not find #ai-version-nav element!");
+            }
+            versionDisplay.textContent = `Version ${this.currentVersionIndex + 1} of ${this.editHistory.length}`;
+            prevButton.disabled = this.currentVersionIndex === 0;
+            nextButton.disabled = this.currentVersionIndex === this.editHistory.length - 1;
+        } else {
+            console.log(`updateVersionView: History length is ${this.editHistory.length} (<= 1). Should hide nav.`); // Log else block
+            if (versionNav) {
+                versionNav.style.display = 'none';
+                console.log(`updateVersionView: Set versionNav display to none.`);
+            } else {
+                console.error("updateVersionView: Could not find #ai-version-nav element!");
+            }
+        }
+
+        // Enable/disable interaction controls based on version
+        const isLatestVersion = this.currentVersionIndex === this.editHistory.length - 1;
+        // console.log(`updateVersionView: isLatestVersion = ${isLatestVersion}. Setting Apply button display.`); // Keep log for now or remove later
+        const applyButton = this.editorModal.querySelector('#ai-editor-apply');
+        // Always show the apply button if history exists, regardless of version
+        applyButton.style.display = (this.editHistory.length > 0) ? 'inline-block' : 'none';
+
+        // Add/remove class to diff view container to disable interactions via CSS
+        if (isLatestVersion) {
+            // ... existing code ...
         }
     }
 }
