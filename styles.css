@@ -193,6 +193,12 @@ body {
     border: 1px solid #fecaca;
 }
 
+/* Spacing for custom button config groups */
+.options-page-body .button-label-group {
+    margin-bottom: 15px;
+    /* Add space between label input and prompt section */
+}
+
 .ai-editor-modal {
     position: fixed;
     top: 0;

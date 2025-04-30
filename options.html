@@ -22,6 +22,44 @@
             <small>Enter instructions here that you want the AI to follow *every time* it edits text for you. These are
                 combined with the specific instructions you give in the editor pop-up.</small>
         </div>
+
+        <hr>
+        <h2>Custom Prompt Buttons (Optional)</h2>
+        <p><small>Configure up to three buttons with custom prompts for quick actions in the editor modal.</small></p>
+
+        <div class="form-group">
+            <div class="button-label-group">
+                <label for="customButton1Label">Button 1 Label:</label>
+                <input type="text" id="customButton1Label" placeholder="e.g., Summarize">
+            </div>
+            <div class="button-prompt-group">
+                <label for="customButton1Prompt">Button 1 Prompt:</label>
+                <textarea id="customButton1Prompt" rows="3" placeholder="Enter the prompt for Button 1..."></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="button-label-group">
+                <label for="customButton2Label">Button 2 Label:</label>
+                <input type="text" id="customButton2Label" placeholder="e.g., Explain">
+            </div>
+            <div class="button-prompt-group">
+                <label for="customButton2Prompt">Button 2 Prompt:</label>
+                <textarea id="customButton2Prompt" rows="3" placeholder="Enter the prompt for Button 2..."></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="button-label-group">
+                <label for="customButton3Label">Button 3 Label:</label>
+                <input type="text" id="customButton3Label" placeholder="e.g., Rephrase">
+            </div>
+            <div class="button-prompt-group">
+                <label for="customButton3Prompt">Button 3 Prompt:</label>
+                <textarea id="customButton3Prompt" rows="3" placeholder="Enter the prompt for Button 3..."></textarea>
+            </div>
+        </div>
+
         <button id="save" class="save-button">Save Settings</button>
         <div id="status" class="status"></div>
     </div>

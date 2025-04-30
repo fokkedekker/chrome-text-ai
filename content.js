@@ -55,6 +55,11 @@ class AIEditor {
         modal.className = 'ai-editor-modal';
         modal.innerHTML = `
             <div class="ai-editor-content">
+                <button id="ai-editor-options-link" class="ai-editor-options-button" title="Open Settings">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                        <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 5.887a1.875 1.875 0 0 1-.918 1.698l-2.286.962c-.93.392-1.38 1.48-1.017 2.41l.985 2.345a1.875 1.875 0 0 1 .07 1.629l-.96 2.287c-.393.93-.018 2.018.913 2.41l2.286.962a1.875 1.875 0 0 1 .918 1.698l.178 2.071c.15.904.932 1.567 1.85 1.567h1.844c.917 0 1.699-.663 1.85-1.567l.178-2.071a1.875 1.875 0 0 1 .918-1.698l2.286-.962c.93-.392 1.38-1.48 1.017-2.41l-.985-2.345a1.875 1.875 0 0 1-.07-1.629l.96-2.287c.393-.93.018-2.018-.913-2.41l-2.286-.962a1.875 1.875 0 0 1-.918-1.698l-.178-2.071c-.15-.904-.932-1.567-1.85-1.567h-1.844Zm1.422 8.25a2.25 2.25 0 1 0-4.5 0 2.25 2.25 0 0 0 4.5 0Z" clip-rule="evenodd" />
+                    </svg>
+                </button>
                 <h3>AI Editor</h3>
                 
                 <div class="ai-editor-prompt-area">
@@ -76,6 +81,7 @@ class AIEditor {
                 <div class="ai-editor-status" id="ai-editor-status"></div>
                 
                 <div class="ai-editor-buttons">
+                    <div id="ai-custom-buttons" class="ai-custom-buttons-container"></div> <!-- Container for custom buttons -->
                     <button id="ai-editor-submit" class="ai-editor-submit">Get Suggestions</button>
                     <button id="ai-editor-follow-up" class="ai-editor-follow-up" style="display: none;">Send Follow-up</button>
                     <button id="ai-editor-apply" class="ai-editor-apply" style="display: none;">Apply Accepted Changes</button>
@@ -98,6 +104,7 @@ class AIEditor {
         const promptInput = this.editorModal.querySelector('#ai-editor-prompt-input');
         const prevButton = this.editorModal.querySelector('#ai-editor-prev-version');
         const nextButton = this.editorModal.querySelector('#ai-editor-next-version');
+        const optionsButton = this.editorModal.querySelector('#ai-editor-options-link');
 
         submitButton.addEventListener('click', () => {
             console.log("Submit button clicked, calling handleInitialSubmit...");
@@ -110,6 +117,15 @@ class AIEditor {
         // Add listeners for version navigation
         prevButton.addEventListener('click', () => this.navigateVersion(-1));
         nextButton.addEventListener('click', () => this.navigateVersion(1));
+
+        // Listener for the options button
+        if (optionsButton) {
+            optionsButton.addEventListener('click', () => {
+                chrome.runtime.openOptionsPage();
+            });
+        } else {
+            console.warn("Could not find options button element to attach listener.");
+        }
     }
 
     addDiffViewEventListeners() {
@@ -138,6 +154,19 @@ class AIEditor {
         }
 
         this.editorModal.style.display = 'flex'; // Ensure display is set correctly before transition
+
+        // Fetch settings and render custom buttons
+        chrome.storage.sync.get([
+            'customButton1Label', 'customButton1Prompt',
+            'customButton2Label', 'customButton2Prompt',
+            'customButton3Label', 'customButton3Prompt'
+        ], (settings) => {
+            if (chrome.runtime.lastError) {
+                console.error("Error fetching custom button settings:", chrome.runtime.lastError);
+                return;
+            }
+            this.renderCustomButtons(settings);
+        });
 
         // Use class for visibility to trigger transition
         requestAnimationFrame(() => { // Ensure modal is in DOM before adding class
@@ -360,8 +389,12 @@ class AIEditor {
     }
 
     getAcceptedDiffText(versionIndex) { // Accepts versionIndex
-        const segmentsToUse = this.editHistory[versionIndex];
-        if (!segmentsToUse) return '';
+        const versionData = this.editHistory[versionIndex];
+        if (!versionData || !Array.isArray(versionData.diff)) {
+            console.error("getAcceptedDiffText: Invalid version data or diff array for index", versionIndex, versionData);
+            return ''; // Return empty string if data is invalid
+        }
+        const segmentsToUse = versionData.diff; // Access the diff array
         let final_text = '';
         segmentsToUse.forEach((segment) => {
             if (segment.type === 'equal') {
@@ -414,8 +447,8 @@ class AIEditor {
             if (response.success && response.diff) {
                 console.log("Received success response with diff data (initial):", JSON.stringify(response.diff)); // Log received data
                 // Initialize accepted state for the first version
-                const initialSegments = response.diff.map(seg => ({ ...seg, accepted: true }));
-                this.editHistory = [initialSegments]; // Start new history with initialized segments
+                const initializedDiff = response.diff.map(seg => ({ ...seg, accepted: true }));
+                this.editHistory = [initializedDiff]; // Start new history with initialized segments
                 this.currentVersionIndex = 0;
                 this.updateVersionView(this.currentVersionIndex); // Render the new version
                 this.showStatus('Suggestions received. Review the changes.', 'info');
@@ -678,6 +711,28 @@ class AIEditor {
         // Render the diff for the selected version
         this.renderDiff(diffSegments);
 
+        // Call the dedicated function to update nav display
+        this.updateVersionNavDisplay();
+
+        // Enable/disable interaction controls based on version
+        const isLatestVersion = this.currentVersionIndex === this.editHistory.length - 1;
+        const applyButton = this.editorModal.querySelector('#ai-editor-apply');
+        // Always show the apply button if history exists, regardless of version
+        applyButton.style.display = (this.editHistory.length > 0) ? 'inline-block' : 'none';
+
+        // Add/remove class to diff view container to disable interactions via CSS
+        const diffViewContainer = this.editorModal.querySelector('#ai-editor-diff-view');
+        if (isLatestVersion) {
+            diffViewContainer.classList.remove('read-only-diff');
+        } else {
+            diffViewContainer.classList.add('read-only-diff');
+            // Optional: Provide feedback that interactions are disabled
+            // this.showStatus(`Viewing older version ${this.currentVersionIndex + 1}. Controls disabled.`, 'info'); 
+        }
+    }
+
+    // Dedicated function to update the Version Nav display elements
+    updateVersionNavDisplay() {
         const versionNav = this.editorModal.querySelector('#ai-version-nav');
         const versionDisplay = this.editorModal.querySelector('#ai-editor-version-display');
         const prevButton = this.editorModal.querySelector('#ai-editor-prev-version');
@@ -703,18 +758,105 @@ class AIEditor {
                 console.error("updateVersionView: Could not find #ai-version-nav element!");
             }
         }
+    }
 
-        // Enable/disable interaction controls based on version
-        const isLatestVersion = this.currentVersionIndex === this.editHistory.length - 1;
-        // console.log(`updateVersionView: isLatestVersion = ${isLatestVersion}. Setting Apply button display.`); // Keep log for now or remove later
-        const applyButton = this.editorModal.querySelector('#ai-editor-apply');
-        // Always show the apply button if history exists, regardless of version
-        applyButton.style.display = (this.editHistory.length > 0) ? 'inline-block' : 'none';
+    // --- Custom Button Rendering and Handling ---
+    renderCustomButtons(settings) {
+        const container = this.editorModal.querySelector('#ai-custom-buttons');
+        container.innerHTML = ''; // Clear previous buttons
 
-        // Add/remove class to diff view container to disable interactions via CSS
-        if (isLatestVersion) {
-            // ... existing code ...
+        for (let i = 1; i <= 3; i++) {
+            const label = settings[`customButton${i}Label`];
+            const prompt = settings[`customButton${i}Prompt`];
+
+            if (label && prompt) { // Only render if both label and prompt are set
+                const button = document.createElement('button');
+                button.textContent = label;
+                button.classList.add('ai-editor-button', 'ai-custom-button'); // Add general and specific classes
+                button.dataset.prompt = prompt; // Store prompt in data attribute
+
+                button.addEventListener('click', (event) => {
+                    const clickedPrompt = event.target.dataset.prompt;
+                    this.handleCustomButtonClick(clickedPrompt);
+                });
+
+                container.appendChild(button);
+            }
         }
+    }
+
+    async handleCustomButtonClick(prompt) {
+        if (!this.selectedContext || !this.selectedContext.text) {
+            this.showStatus('Error: No text selected or context lost.', 'error');
+            return;
+        }
+        if (!prompt) {
+            this.showStatus('Error: Custom button prompt is empty.', 'error');
+            return;
+        }
+
+        console.log("Custom button clicked. Prompt:", prompt, "Selected Text:", this.selectedContext.text);
+        this.setLoadingState(true);
+
+        try {
+            // Send request to background script (similar to handleInitialSubmit)
+            const response = await chrome.runtime.sendMessage({
+                action: 'ai-request',
+                text: this.selectedContext.text, // Use the currently stored selected text
+                instructions: prompt, // Use the custom button's prompt
+                contextElementInfo: this.selectedContext.elementInfo, // Send element info
+                originalText: this.selectedContext.text // Send original text for diffing history
+            });
+
+            console.log("Response from background script (custom button):", response);
+            this.processAIResponse(response, this.selectedContext.text); // Reuse existing response handler
+        } catch (error) {
+            console.error('Error sending AI request (custom button):', error);
+            this.showStatus(`Error: ${error.message}`, 'error');
+            this.setLoadingState(false);
+        }
+    }
+
+    // Centralized AI Response Processor
+    processAIResponse(response, originalText) {
+        this.setLoadingState(false);
+        if (response.error) {
+            console.error("AI Error:", response.error);
+            this.showStatus(`AI Error: ${response.error}`, 'error');
+            return;
+        }
+        if (!response.diff) {
+            console.error("No diff received from AI");
+            this.showStatus('Error: No changes suggested by AI.', 'error');
+            return;
+        }
+
+        // --- FIX: Initialize accepted state for the new diff segments --- 
+        const initializedDiff = response.diff.map(seg => ({ ...seg, accepted: true }));
+        // --- END FIX ---
+
+        // Store this edit version
+        const newVersion = {
+            originalText: originalText,
+            // --- FIX: Use the initialized diff --- 
+            diff: initializedDiff,
+            // --- END FIX ---
+            // We might want to store the prompt used as well later
+        };
+        // Add to history and reset index to the latest
+        this.editHistory.push(newVersion);
+        this.currentVersionIndex = this.editHistory.length - 1;
+
+        console.log("Processing AI response. New history length:", this.editHistory.length, "Current index:", this.currentVersionIndex);
+
+        this.renderDiff(response.diff); // Render the diff for the LATEST version
+        this.updateVersionNavDisplay(); // Update version display (e.g., "Version 2 of 2")
+
+        this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'block';
+        this.editorModal.querySelector('#ai-editor-submit').style.display = 'none'; // Hide initial submit
+        this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'inline-block'; // Show follow-up
+        this.editorModal.querySelector('#ai-editor-apply').style.display = 'inline-block'; // Show apply
+        this.showStatus('Review the proposed changes below.', 'info');
     }
 }
 

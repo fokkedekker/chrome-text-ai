@@ -9,32 +9,38 @@ chrome.commands.onCommand.addListener((command) => {
 
 // Handle API communication
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'process-text') {
-        processTextWithSambaNova(request.text, request.prompt)
-            .then(diffData => {
-                sendResponse({ success: true, diff: diffData.diff_segments });
-            })
-            .catch(error => {
-                sendResponse({ success: false, error: error.message });
-            });
-        return true;
-    } else if (request.action === 'request-ai-edit') {
-        processFollowUpWithSambaNova(request.originalText, request.diffHistory, request.prompt)
-            .then(diffData => {
-                console.log("[Background] Sending follow-up response (success):", { success: true, diff: diffData.diff_segments });
-                sendResponse({ success: true, diff: diffData.diff_segments });
-            })
-            .catch(error => {
-                console.log("[Background] Sending follow-up response (failure):", { success: false, error: error.message });
-                sendResponse({ success: false, error: error.message });
-            });
+    if (request.action === 'ai-request') {
+        if (request.diffHistory && Array.isArray(request.diffHistory)) {
+            console.log("[Background] Received follow-up ai-request");
+            processFollowUpWithSambaNova(request.originalText, request.diffHistory, request.instructions)
+                .then(diffData => {
+                    console.log("[Background] Sending follow-up response (success):", { success: true, diff: diffData.diff_segments });
+                    sendResponse({ success: true, diff: diffData.diff_segments });
+                })
+                .catch(error => {
+                    console.log("[Background] Sending follow-up response (failure):", { success: false, error: error.message });
+                    sendResponse({ success: false, error: error.message });
+                });
+        } else {
+            console.log("[Background] Received initial/custom ai-request");
+            processTextWithSambaNova(request.text, request.instructions)
+                .then(diffData => {
+                    console.log("[Background] Sending initial response (success):", { success: true, diff: diffData.diff_segments });
+                    sendResponse({ success: true, diff: diffData.diff_segments });
+                })
+                .catch(error => {
+                    console.log("[Background] Sending initial response (failure):", { success: false, error: error.message });
+                    sendResponse({ success: false, error: error.message });
+                });
+        }
         return true;
     } else {
+        console.warn("[Background] Received unknown action:", request.action);
     }
 });
 
 // Initial processing function
-async function processTextWithSambaNova(text, prompt) {
+async function processTextWithSambaNova(text, instructions) {
     const API_ENDPOINT = 'https://api.sambanova.ai/v1/chat/completions';
 
     try {
@@ -67,7 +73,7 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
             systemPrompt += `\n\nIMPORTANT: Always adhere to the following custom instructions provided by the user:\n${customInstructions}`;
         }
 
-        let userContent = `Original text: "${text}"\nInstructions: ${prompt}\n\nRespond with diff_segments JSON only.`;
+        let userContent = `Original text: "${text}"\nInstructions: ${instructions}\n\nRespond with diff_segments JSON only.`;
 
         const requestBody = {
             stream: false,
@@ -125,7 +131,7 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
 }
 
 // Function for handling follow-up edits with history
-async function processFollowUpWithSambaNova(originalText, diffHistory, newPrompt) {
+async function processFollowUpWithSambaNova(originalText, diffHistory, newInstructions) {
     const API_ENDPOINT = 'https://api.sambanova.ai/v1/chat/completions';
 
     try {
@@ -172,7 +178,7 @@ Do not include any other text, explanations, or markdown formatting. Just the JS
 
         userContent += `Previous Changes Attempt (relative to original, with user decisions):
 ${historyString}\n\n`;
-        userContent += `New Instructions: ${newPrompt}\n\nRespond with new diff_segments JSON relative to the ORIGINAL text, considering the history and new instructions.`;
+        userContent += `New Instructions: ${newInstructions}\n\nRespond with new diff_segments JSON relative to the ORIGINAL text, considering the history and new instructions.`;
 
         const requestBody = {
             stream: false,

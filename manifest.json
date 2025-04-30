@@ -43,7 +43,8 @@
                 "content.js"
             ],
             "css": [
-                "content.css"
+                "content.css",
+                "fontawesome.min.css"
             ],
             "run_at": "document_end"
         }
