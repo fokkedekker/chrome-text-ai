@@ -563,6 +563,13 @@ class AIEditor {
 
         try {
             this.applyReplacements([replacement]);
+
+            // --- Clear history after successful application --- 
+            console.log("Clearing edit history after applying changes.");
+            this.editHistory = [];
+            this.currentVersionIndex = -1;
+            // --- End Clear History ---
+
             this.closeModal();
         } catch (error) {
             console.error("Error during final application:", error);
