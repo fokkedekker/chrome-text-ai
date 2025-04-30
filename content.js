@@ -56,9 +56,7 @@ class AIEditor {
         modal.innerHTML = `
             <div class="ai-editor-content">
                 <button id="ai-editor-options-link" class="ai-editor-options-button" title="Open Settings">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                        <path fill-rule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 5.887a1.875 1.875 0 0 1-.918 1.698l-2.286.962c-.93.392-1.38 1.48-1.017 2.41l.985 2.345a1.875 1.875 0 0 1 .07 1.629l-.96 2.287c-.393.93-.018 2.018.913 2.41l2.286.962a1.875 1.875 0 0 1 .918 1.698l.178 2.071c.15.904.932 1.567 1.85 1.567h1.844c.917 0 1.699-.663 1.85-1.567l.178-2.071a1.875 1.875 0 0 1 .918-1.698l2.286-.962c.93-.392 1.38-1.48 1.017-2.41l-.985-2.345a1.875 1.875 0 0 1-.07-1.629l.96-2.287c.393-.93.018-2.018-.913-2.41l-2.286-.962a1.875 1.875 0 0 1-.918-1.698l-.178-2.071c-.15-.904-.932-1.567-1.85-1.567h-1.844Zm1.422 8.25a2.25 2.25 0 1 0-4.5 0 2.25 2.25 0 0 0 4.5 0Z" clip-rule="evenodd" />
-                    </svg>
+                    <i class="fas fa-cog"></i>
                 </button>
                 <h3>AI Editor</h3>
                 
@@ -121,7 +119,20 @@ class AIEditor {
         // Listener for the options button
         if (optionsButton) {
             optionsButton.addEventListener('click', () => {
-                chrome.runtime.openOptionsPage();
+                console.log("Options button clicked! Sending message to background...");
+                // Content script cannot call openOptionsPage directly.
+                // Send a message to the background script instead.
+                chrome.runtime.sendMessage({ action: "openOptionsPage" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error("Error sending openOptionsPage message:", chrome.runtime.lastError);
+                        this.showStatus(`Error opening settings: ${chrome.runtime.lastError.message}`, 'error');
+                    } else if (response && response.error) {
+                        console.error("Background script reported error:", response.error);
+                        this.showStatus(`Error opening settings: ${response.error}`, 'error');
+                    } else {
+                        console.log("Message sent to open options page.");
+                    }
+                });
             });
         } else {
             console.warn("Could not find options button element to attach listener.");
@@ -356,7 +367,7 @@ class AIEditor {
 
         const diffSegments = this.editHistory[this.currentVersionIndex]; // Use history
         const segment = diffSegments[segmentIndex]; // Get segment from history
-        if (!segment || (segment.type !== 'insert' && segment.type !== 'delete')) return;
+        if (!segment || (segment.type !== 'insert' && segment.type === 'delete')) return;
 
         const isAccepted = (action === 'accept');
         const linkedSegmentIndex = segment.linkedSegmentIndex;
@@ -436,35 +447,14 @@ class AIEditor {
 
         try {
             const messagePayload = {
-                action: 'process-text',
-                text: this.selectedContext.text, // Send original selected text
-                prompt: prompt
+                action: 'ai-request',
+                text: this.selectedContext.text,
+                instructions: prompt
             };
             console.log("Sending message from content.js:", messagePayload);
             const response = await chrome.runtime.sendMessage(messagePayload);
 
-            // Updated check for the new response structure
-            if (response.success && response.diff) {
-                console.log("Received success response with diff data (initial):", JSON.stringify(response.diff)); // Log received data
-                // Initialize accepted state for the first version
-                const initializedDiff = response.diff.map(seg => ({ ...seg, accepted: true }));
-                this.editHistory = [initializedDiff]; // Start new history with initialized segments
-                this.currentVersionIndex = 0;
-                this.updateVersionView(this.currentVersionIndex); // Render the new version
-                this.showStatus('Suggestions received. Review the changes.', 'info');
-                // Show Follow-up and Apply buttons, hide initial submit
-                this.editorModal.querySelector('#ai-editor-submit').style.display = 'none';
-                this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'inline-block';
-                this.editorModal.querySelector('#ai-editor-apply').style.display = 'inline-block';
-                this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'block'; // Show diff view
-            } else {
-                // If error or no diff, show error and revert button states
-                this.showStatus(`Error: ${response.error || 'Failed to get suggestions.'}`, 'error');
-                this.editorModal.querySelector('#ai-editor-submit').style.display = 'inline-block';
-                this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'none';
-                this.editorModal.querySelector('#ai-editor-apply').style.display = 'none';
-                this.editorModal.querySelector('#ai-editor-diff-container').style.display = 'none';
-            }
+            this.processAIResponse(response, this.selectedContext.text);
         } catch (error) {
             console.error('Caught error in handleInitialSubmit (content.js):', error);
             // Display the error message from the caught error
@@ -820,6 +810,15 @@ class AIEditor {
     // Centralized AI Response Processor
     processAIResponse(response, originalText) {
         this.setLoadingState(false);
+
+        // --- FIX: Check if response is undefined --- 
+        if (response === undefined) {
+            console.error("Error: Received undefined response from background script.");
+            this.showStatus('Error: No response from background script. Check background logs.', 'error');
+            return;
+        }
+        // --- END FIX ---
+
         if (response.error) {
             console.error("AI Error:", response.error);
             this.showStatus(`AI Error: ${response.error}`, 'error');

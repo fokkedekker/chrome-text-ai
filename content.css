@@ -521,27 +521,27 @@
 .ai-editor-options-button {
     position: absolute;
     top: 20px;
-    /* Adjust as needed */
     right: 20px;
-    /* Adjust as needed */
     background: none;
     border: none;
-    padding: 8px;
+    padding: 0;
     cursor: pointer;
     color: var(--ai-secondary-color);
     border-radius: 50%;
     transition: var(--ai-transition);
-    line-height: 0;
-    /* Prevents extra space around SVG */
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .ai-editor-options-button:hover {
     background-color: #f3f4f6;
-    /* Light grey background on hover */
     color: var(--ai-dark-text);
 }
 
 .ai-editor-options-button svg {
-    display: block;
-    /* Ensures SVG aligns properly */
+    width: 20px;
+    height: 20px;
 }

@@ -34,6 +34,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 });
         }
         return true;
+    } else if (request.action === 'openOptionsPage') {
+        console.log("[Background] Received request to open options page.");
+        chrome.runtime.openOptionsPage();
     } else {
         console.warn("[Background] Received unknown action:", request.action);
     }

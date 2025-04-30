@@ -122,6 +122,7 @@ body {
 }
 
 .options-page-body input[type="password"],
+.options-page-body input[type="text"],
 .options-page-body textarea {
     width: 100%;
     padding: 12px 14px;
@@ -134,6 +135,7 @@ body {
 }
 
 .options-page-body input[type="password"]:focus,
+.options-page-body input[type="text"]:focus,
 .options-page-body textarea:focus {
     outline: none;
     border-color: var(--ai-primary-color);
