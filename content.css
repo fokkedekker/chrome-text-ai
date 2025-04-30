@@ -533,3 +533,43 @@
     width: 20px;
     height: 20px;
 }
+
+/* Styling for editable insert segments */
+.diff-editable-insert {
+    outline: none;
+    /* Remove default browser outline */
+    border: 1px dashed transparent;
+    /* Subtle indicator, transparent by default */
+    padding-left: 4px;
+    /* Adjust padding slightly */
+    padding-right: 4px;
+    margin-left: -5px;
+    /* Counteract padding for alignment */
+    margin-right: -5px;
+    border-radius: 4px;
+    cursor: text;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.diff-editable-insert:hover {
+    border-color: #a5b4fc;
+    /* Indicate hover */
+}
+
+.diff-editable-insert:focus {
+    border-color: var(--ai-primary-color);
+    /* Indicate focus */
+    background-color: #f0f9ff;
+    /* Slight background change on focus */
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+/* Ensure editable div takes insert background color when accepted */
+.diff-segment-wrapper.accepted .diff-editable-insert {
+    background-color: var(--ai-diff-insert-bg);
+}
+
+/* Ensure editable div background is transparent when rejected */
+.diff-segment-wrapper.rejected .diff-editable-insert {
+    background-color: transparent;
+}

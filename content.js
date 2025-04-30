@@ -154,6 +154,43 @@ class AIEditor {
                 this.handleDiffAction(segmentIndex, action, wrapper); // Pass the wrapper
             }
         });
+
+        // INPUT listener for editable insert segments
+        diffView.addEventListener('input', (event) => {
+            const target = event.target;
+            // Check if the input event occurred on an editable insert element
+            if (target.classList.contains('diff-editable-insert')) {
+                const originalIndexStr = target.dataset.originalIndex;
+                if (originalIndexStr === undefined) {
+                    console.warn("Editable insert element missing originalIndex dataset.");
+                    return;
+                }
+                const originalIndex = parseInt(originalIndexStr, 10);
+                const newText = target.textContent;
+
+                // --- Update the text in the persistent editHistory ---
+                const versionData = this.editHistory[this.currentVersionIndex];
+                if (versionData && versionData.diff && versionData.diff[originalIndex]) {
+                    if (versionData.diff[originalIndex].type === 'insert') { // Double check type
+                        versionData.diff[originalIndex].text = newText;
+                        console.log(`Updated history version ${this.currentVersionIndex}, segment ${originalIndex} text to:`, newText);
+
+                        // Optional: Update currentDiffSegments as well if needed for other immediate interactions
+                        // Find segment in currentDiffSegments by originalIndex and update its text
+                        const currentSegment = this.currentDiffSegments.find(seg => seg.originalIndex === originalIndex);
+                        if (currentSegment) {
+                            currentSegment.text = newText;
+                        }
+
+                    } else {
+                        console.warn("Input event on editable element, but corresponding history segment is not type 'insert'. Index:", originalIndex);
+                    }
+                } else {
+                    console.warn(`Could not find segment index ${originalIndex} in history version ${this.currentVersionIndex} to update text.`);
+                }
+                // --- End Update ---
+            }
+        });
     }
 
     handleEditorOpen() {
@@ -286,11 +323,14 @@ class AIEditor {
                 deleteSpan.classList.add('diff-delete');
                 pairWrapper.appendChild(deleteSpan);
 
-                // Render insert part
-                const insertSpan = document.createElement('span');
-                insertSpan.textContent = nextSegment.text;
-                insertSpan.classList.add('diff-insert');
-                pairWrapper.appendChild(insertSpan);
+                // Render editable insert part for pairs
+                const insertDiv = document.createElement('div'); // Use div
+                insertDiv.textContent = nextSegment.text;
+                insertDiv.contentEditable = "true"; // Make it editable
+                insertDiv.classList.add('diff-insert', 'diff-editable-insert'); // Add specific class
+                insertDiv.dataset.originalIndex = nextSegment.originalIndex; // Store original index
+
+                pairWrapper.appendChild(insertDiv);
 
                 // Add shared controls
                 this.addDiffControls(pairWrapper, i, true); // isPair = true
@@ -306,10 +346,19 @@ class AIEditor {
                 }
                 segmentWrapper.dataset.segmentIndex = i;
 
-                const textSpan = document.createElement('span');
-                textSpan.textContent = segment.text;
-                textSpan.classList.add(`diff-${segment.type}`);
-                segmentWrapper.appendChild(textSpan);
+                const textElement = document.createElement(
+                    segment.type === 'insert' ? 'div' : 'span' // Use div for insert, span otherwise
+                );
+                textElement.textContent = segment.text;
+                textElement.classList.add(`diff-${segment.type}`);
+
+                // Make standalone inserts editable
+                if (segment.type === 'insert') {
+                    textElement.contentEditable = "true";
+                    textElement.classList.add('diff-editable-insert');
+                    textElement.dataset.originalIndex = segment.originalIndex; // Store original index
+                }
+                segmentWrapper.appendChild(textElement);
 
                 // Add controls only if it's a changeable segment
                 if (segment.type === 'insert' || segment.type === 'delete') {
