@@ -138,79 +138,89 @@
 
 /* Wrapper for each segment */
 .diff-segment-wrapper {
-    display: inline;
-    position: relative;
-    padding: 2px 0;
-    border-radius: 4px;
-    transition: var(--ai-transition);
-    margin-right: 2px;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background-color: #f9fafb;
+    /* Light background for the wrapper */
+    border: 1px solid var(--ai-border-color);
+    display: flex;
+    /* Use Flexbox */
+    align-items: flex-start;
+    /* Align items to the top */
+    justify-content: space-between;
+    /* Push text and controls apart */
+    width: 100%;
+    /* Make wrapper take full width */
+    box-sizing: border-box;
+    /* Include padding/border in width */
 }
 
-/* Style for delete/insert pairs */
-.diff-segment-wrapper.diff-pair {
-    display: inline-block;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 4px 6px;
-    margin-bottom: 10px;
-    background-color: #f1f5f9;
-    flex-direction: column;
-    vertical-align: top;
-    max-width: 100%;
+/* Style for the text content spans within the wrapper */
+.diff-segment-wrapper>span {
+    flex-grow: 1;
+    /* Allow text span to take available space */
+    margin-right: 15px;
+    /* Space between text and controls */
     word-break: break-word;
-    box-shadow: var(--ai-shadow-sm);
+    /* Allow long words to break */
 }
 
-/* Remove individual borders/bg on spans within a pair */
+/* Specific styling for delete/insert spans *within* a pair wrapper */
 .diff-pair .diff-delete,
 .diff-pair .diff-insert {
     display: block;
-    border: none;
-    padding: 3px 6px;
-    margin: 3px 0;
+    /* Stack vertically */
+    width: 100%;
+    /* Take full width within the text area */
+    box-sizing: border-box;
+    padding: 4px 6px;
+    margin: 2px 0;
     border-radius: 4px;
-    word-break: break-word;
-    word-wrap: break-word;
-    white-space: pre-wrap;
 }
 
 .diff-pair .diff-delete {
     background-color: var(--ai-diff-delete-bg);
-    border-left: 3px solid var(--ai-diff-delete-border);
-    margin-bottom: 6px;
+    /* text-decoration: line-through; */
+    /* Apply based on accepted/rejected class */
 }
 
 .diff-pair .diff-insert {
     background-color: var(--ai-diff-insert-bg);
-    border-left: 3px solid var(--ai-diff-insert-border);
 }
 
-/* Controls container */
+/* Special handling for pair wrapper which contains multiple spans */
+.diff-segment-wrapper.diff-pair {
+    /* Adjust alignment if needed, flex-start is usually fine */
+}
+
+/* Ensure controls don't shrink */
 .diff-controls {
-    display: flex;
-    margin-top: 5px;
-    margin-bottom: 3px;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 2px;
+    flex-shrink: 0;
+    /* display: flex; */
+    /* Already likely flex from button styles */
+    /* align-items: center; */
 }
 
 /* Styling for accept/reject buttons */
 .diff-action-button {
     background: none;
     border: none;
-    padding: 0;
-    margin: 0;
+    padding: 4px;
+    border-radius: 50%;
     cursor: pointer;
+    margin-left: 4px;
+    /* Add a small space between accept/reject */
+    transition: background-color 0.2s ease;
+    color: var(--ai-secondary-color);
     display: inline-flex;
+    /* Keep using flex for icon alignment */
     align-items: center;
     justify-content: center;
     border-radius: 6px;
     width: 28px;
     height: 28px;
-    transition: var(--ai-transition);
     box-shadow: var(--ai-shadow-sm);
-    background-color: white;
 }
 
 .diff-action-button svg {
@@ -386,69 +396,47 @@
 
 /* Styling for accepted/rejected states */
 .diff-segment-wrapper.accepted .diff-insert {
-    background-color: var(--ai-diff-insert-bg);
-    border-color: var(--ai-diff-insert-border);
+    /* background-color: var(--ai-diff-insert-bg); */
+    /* Handled by direct rule now */
+    /* border-color: var(--ai-diff-insert-border); */
 }
 
 .diff-segment-wrapper.accepted .diff-delete {
-    background-color: var(--ai-diff-delete-bg);
-    border-color: var(--ai-diff-delete-border);
+    /* background-color: var(--ai-diff-delete-bg); */
+    /* Handled by direct rule now */
+    /* border-color: var(--ai-diff-delete-border); */
     opacity: 0.7;
+    text-decoration: line-through;
+    /* Apply strikethrough when pair is accepted */
 }
 
 /* Pair specific accepted state */
 .diff-segment-wrapper.diff-pair.accepted {
-    border-color: transparent;
-    position: relative;
+    /* Inherits background/border from main wrapper */
     box-shadow: 0 1px 3px rgba(16, 185, 129, 0.1);
 }
 
-.diff-segment-wrapper.diff-pair.accepted .diff-insert {
-    background-color: var(--ai-diff-insert-bg);
-}
-
-.diff-segment-wrapper.diff-pair.accepted .diff-delete {
-    background-color: var(--ai-diff-delete-bg);
-    text-decoration: line-through;
-    opacity: 0.7;
-}
-
-.diff-segment-wrapper.rejected .diff-insert {
-    background-color: #f1f5f9;
-    border-color: #cbd5e1;
-    text-decoration: line-through;
-    opacity: 0.5;
-}
-
-.diff-segment-wrapper.rejected .diff-delete {
-    background-color: transparent;
-    border-color: transparent;
-    text-decoration: none;
-    color: var(--ai-dark-text);
-    opacity: 1;
-}
-
-/* Pair specific rejected state */
-.diff-segment-wrapper.diff-pair.rejected {
-    background-color: #f8fafc;
-    border-color: #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
+/* Rejected state styling for pairs */
 .diff-segment-wrapper.diff-pair.rejected .diff-insert {
-    background-color: transparent;
-    text-decoration: line-through;
     opacity: 0.5;
+    text-decoration: line-through;
+    background-color: #f8fafc;
+    /* Lighter background */
 }
 
 .diff-segment-wrapper.diff-pair.rejected .diff-delete {
-    background-color: transparent;
-    text-decoration: none;
-    color: var(--ai-dark-text);
     opacity: 1;
+    text-decoration: none;
+    /* Remove strikethrough when pair is rejected */
+    background-color: #f8fafc;
+    /* Lighter background */
 }
 
-/* Styling for Read-Only Diff View */
+.diff-segment-wrapper.diff-pair.accepted .diff-insert {
+    /* background-color: var(--ai-diff-insert-bg); */
+    /* Already set */
+}
+
 .ai-editor-diff-view.read-only-diff .diff-action-button {
     display: none !important;
     /* Hide accept/reject buttons */

@@ -144,9 +144,14 @@ class AIEditor {
         diffView.addEventListener('click', (event) => {
             const button = event.target.closest('.diff-action-button');
             if (button) {
+                const wrapper = button.closest('.diff-segment-wrapper'); // Find the parent wrapper
+                if (!wrapper) {
+                    console.error("Could not find parent .diff-segment-wrapper for the clicked button.");
+                    return;
+                }
                 const segmentIndex = parseInt(button.dataset.segmentIndex, 10);
                 const action = button.dataset.action; // 'accept' or 'reject'
-                this.handleDiffAction(segmentIndex, action);
+                this.handleDiffAction(segmentIndex, action, wrapper); // Pass the wrapper
             }
         });
     }
@@ -358,44 +363,69 @@ class AIEditor {
         wrapper.appendChild(controls);
     }
 
-    handleDiffAction(segmentIndex, action) {
+    handleDiffAction(segmentIndex, action, wrapper) {
         // Only allow actions on the latest version
         if (this.currentVersionIndex !== this.editHistory.length - 1) {
             console.log("Diff actions only allowed on the latest version.");
             return;
         }
 
-        const diffSegments = this.editHistory[this.currentVersionIndex]; // Use history
+        const versionData = this.editHistory[this.currentVersionIndex];
+        if (!versionData || !Array.isArray(versionData.diff)) {
+            console.error("handleDiffAction: Invalid version data or diff array in history for index", this.currentVersionIndex);
+            return;
+        }
+        const diffSegments = versionData.diff; // Access the actual array
         const segment = diffSegments[segmentIndex]; // Get segment from history
-        if (!segment || (segment.type !== 'insert' && segment.type === 'delete')) return;
+        if (!segment || (segment.type !== 'insert' && segment.type !== 'delete')) {
+            console.log(`Action ignored for segment type: ${segment?.type}`);
+            return;
+        }
 
         const isAccepted = (action === 'accept');
         const linkedSegmentIndex = segment.linkedSegmentIndex;
 
-        // Update state for the primary segment IN HISTORY
+        // Update the state in the currently displayed segments array
         segment.accepted = isAccepted;
-        const segmentWrapper = this.editorModal.querySelector(`.diff-segment-wrapper[data-segment-index="${segmentIndex}"]`);
-        if (!segmentWrapper) return;
 
-        // Update state for the linked segment if it exists IN HISTORY
-        if (segment.isChangePair && linkedSegmentIndex !== -1 && diffSegments[linkedSegmentIndex]) {
-            diffSegments[linkedSegmentIndex].accepted = isAccepted;
+        // --- FIX: Also update the state in the persistent editHistory --- 
+        if (diffSegments && diffSegments[segment.originalIndex]) {
+            diffSegments[segment.originalIndex].accepted = isAccepted;
+        } else {
+            console.warn(`Could not find segment index ${segment.originalIndex} in history version ${this.currentVersionIndex}`);
         }
+        // --- END FIX ---
 
-        // Update visuals for the wrapper and toggle button visibility
-        const acceptButton = segmentWrapper.querySelector('.diff-action-button.accept');
-        const rejectButton = segmentWrapper.querySelector('.diff-action-button.reject');
+        // Use the passed-in wrapper directly
+        wrapper.classList.toggle('accepted', isAccepted);
+        wrapper.classList.toggle('rejected', !isAccepted); // Explicitly toggle rejected class too
 
-        if (isAccepted) {
-            segmentWrapper.classList.remove('rejected');
-            segmentWrapper.classList.add('accepted');
-            acceptButton.style.display = 'none'; // Hide Accept button
-            rejectButton.style.display = 'inline-flex'; // Show Reject button
-        } else { // reject
-            segmentWrapper.classList.remove('accepted');
-            segmentWrapper.classList.add('rejected');
-            acceptButton.style.display = 'inline-flex'; // Show Accept button
-            rejectButton.style.display = 'none'; // Hide Reject button
+        // --- FIX: Toggle button visibility --- 
+        const acceptButton = wrapper.querySelector('.diff-action-button.accept');
+        const rejectButton = wrapper.querySelector('.diff-action-button.reject');
+
+        if (acceptButton && rejectButton) {
+            acceptButton.style.display = isAccepted ? 'none' : 'inline-flex'; // Show accept only if rejected
+            rejectButton.style.display = isAccepted ? 'inline-flex' : 'none'; // Show reject only if accepted
+        } else {
+            console.warn("Could not find accept/reject buttons within the wrapper for segment", segmentIndex);
+        }
+        // --- END FIX ---
+
+        if (segment.isChangePair && segment.linkedSegmentIndex !== -1 && segment.linkedSegmentIndex < this.currentDiffSegments.length) {
+            const linkedSegment = this.currentDiffSegments[segment.linkedSegmentIndex];
+            linkedSegment.accepted = isAccepted; // Update linked segment in current view array
+
+            // --- FIX: Also update the linked segment state in the persistent editHistory --- 
+            const linkedOriginalIndex = linkedSegment.originalIndex;
+            if (diffSegments && diffSegments[linkedOriginalIndex]) {
+                diffSegments[linkedOriginalIndex].accepted = isAccepted;
+            } else {
+                console.warn(`Could not find linked segment index ${linkedOriginalIndex} in history version ${this.currentVersionIndex}`);
+            }
+            // --- END FIX ---
+
+            console.log(` -> Also updated linked segment ${segment.linkedSegmentIndex}. Accepted: ${isAccepted}`);
         }
     }
 
@@ -470,61 +500,47 @@ class AIEditor {
     }
 
     async handleFollowUpSubmit() {
-        if (!this.editorModal || !this.selectedContext) return;
-
-        const promptInput = this.editorModal.querySelector('#ai-editor-prompt-input');
-        const newPrompt = promptInput.value.trim();
-
-        if (!newPrompt) {
-            this.showStatus('Please enter follow-up instructions.', 'error');
+        if (!this.selectedContext || this.currentVersionIndex < 0 || this.currentVersionIndex >= this.editHistory.length) {
+            this.showStatus('Error: Cannot perform follow-up without context or history.', 'error');
             return;
         }
 
-        // Prepare the history of changes
-        // Only include segments that represent changes (delete/insert)
-        const diffHistory = this.currentDiffSegments
-            .filter(seg => seg.type === 'delete' || seg.type === 'insert')
-            .map(seg => ({
-                type: seg.type,
-                text: seg.text,
-                accepted: seg.accepted // Include the accepted/rejected state
-            }));
+        const promptInput = this.editorModal.querySelector('#ai-editor-prompt-input');
+        const followUpInstructions = promptInput.value.trim();
+
+        if (!followUpInstructions) {
+            this.showStatus('Please enter follow-up instructions.', 'warning');
+            return;
+        }
+
+        // Determine the text to send: Use the *accepted* state of the *currently viewed* diff
+        const baseTextForFollowUp = this.getAcceptedDiffText(this.currentVersionIndex);
+
+        // Get the raw diff segments from the currently viewed version, including their accepted state
+        const historyToSend = this.currentDiffSegments; // Already reflects user's accept/reject actions on the current view
 
         this.setLoadingState(true);
-        this.showStatus('Processing follow-up with AI...', 'info');
+        promptInput.value = ''; // Clear prompt input after sending follow-up
 
         try {
+            // Send message using the unified 'ai-request' action
             const response = await chrome.runtime.sendMessage({
-                action: 'request-ai-edit',
-                originalText: this.selectedContext.text,
-                diffHistory: diffHistory, // Send the processed history
-                prompt: newPrompt // Send the new prompt
+                action: 'ai-request',
+                text: baseTextForFollowUp, // Send the accepted version of the current diff
+                instructions: followUpInstructions,
+                diffHistory: historyToSend, // Send the full current segments with accepted state
+                contextElementInfo: this.selectedContext.elementInfo,
+                originalText: baseTextForFollowUp // Base text for this specific follow-up diff
             });
-
-            if (response.error) {
-                throw new Error(response.error);
-            }
 
             console.log("Received follow-up diff data:", response.diff);
 
-            if (response.diff) {
-                console.log("Received success response with diff data (follow-up):", JSON.stringify(response.diff)); // Log received data
-                // Initialize accepted state for the follow-up version
-                const followUpSegments = response.diff.map(seg => ({ ...seg, accepted: true }));
-                this.editHistory.push(followUpSegments); // Add initialized segments to history
-                this.currentVersionIndex = this.editHistory.length - 1;
-                this.updateVersionView(this.currentVersionIndex); // Render the new version
-                this.showStatus('Follow-up suggestions received. Review the changes.', 'info');
-                // Keep Follow-up and Apply buttons visible
-            } else {
-                this.showStatus('No changes suggested for the follow-up.', 'info');
-            }
-
+            this.processAIResponse(response, baseTextForFollowUp); // Use the central handler
         } catch (error) {
             console.error('Error getting follow-up suggestions:', error);
             this.showStatus(`Error: ${error.message}`, 'error');
         } finally {
-            this.setLoadingState(false);
+            this.setLoadingState(false); // Ensure loading state is reset even on error
         }
     }
 
