@@ -551,12 +551,14 @@
     transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.diff-editable-insert:hover {
+.diff-editable-insert[contenteditable="true"]:hover,
+.diff-editable-delete[contenteditable="true"]:hover {
     border-color: #a5b4fc;
     /* Indicate hover */
 }
 
-.diff-editable-insert:focus {
+.diff-editable-insert[contenteditable="true"]:focus,
+.diff-editable-delete[contenteditable="true"]:focus {
     border-color: var(--ai-primary-color);
     /* Indicate focus */
     background-color: #f0f9ff;
@@ -564,12 +566,21 @@
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
 }
 
-/* Ensure editable div takes insert background color when accepted */
-.diff-segment-wrapper.accepted .diff-editable-insert {
+/* Style editable insert (green) when it's active (accepted state) */
+.diff-segment-wrapper.accepted .diff-editable-insert[contenteditable="true"] {
     background-color: var(--ai-diff-insert-bg);
 }
 
-/* Ensure editable div background is transparent when rejected */
-.diff-segment-wrapper.rejected .diff-editable-insert {
-    background-color: transparent;
+/* Style editable delete (red-ish) when it's active (rejected state) */
+.diff-segment-wrapper.rejected .diff-editable-delete[contenteditable="true"] {
+    background-color: var(--ai-diff-delete-bg);
+}
+
+/* Ensure non-editable parts are visually distinct (transparent background) */
+.diff-editable-insert[contenteditable="false"],
+.diff-editable-delete[contenteditable="false"] {
+    background-color: transparent !important;
+    /* Override any other bg */
+    cursor: default;
+    /* Optionally add other styles like slight opacity */
 }

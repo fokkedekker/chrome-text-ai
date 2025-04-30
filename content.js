@@ -158,8 +158,11 @@ class AIEditor {
         // INPUT listener for editable insert segments
         diffView.addEventListener('input', (event) => {
             const target = event.target;
-            // Check if the input event occurred on an editable insert element
-            if (target.classList.contains('diff-editable-insert')) {
+            // Check if the input event occurred on an editable insert OR delete element
+            const isEditableInsert = target.classList.contains('diff-editable-insert');
+            const isEditableDelete = target.classList.contains('diff-editable-delete');
+
+            if (isEditableInsert || isEditableDelete) {
                 const originalIndexStr = target.dataset.originalIndex;
                 if (originalIndexStr === undefined) {
                     console.warn("Editable insert element missing originalIndex dataset.");
@@ -171,8 +174,11 @@ class AIEditor {
                 // --- Update the text in the persistent editHistory ---
                 const versionData = this.editHistory[this.currentVersionIndex];
                 if (versionData && versionData.diff && versionData.diff[originalIndex]) {
-                    if (versionData.diff[originalIndex].type === 'insert') { // Double check type
-                        versionData.diff[originalIndex].text = newText;
+                    const segmentToUpdate = versionData.diff[originalIndex];
+                    const expectedType = isEditableInsert ? 'insert' : 'delete';
+
+                    if (segmentToUpdate.type === expectedType) { // Check type match
+                        segmentToUpdate.text = newText;
                         console.log(`Updated history version ${this.currentVersionIndex}, segment ${originalIndex} text to:`, newText);
 
                         // Optional: Update currentDiffSegments as well if needed for other immediate interactions
@@ -183,7 +189,7 @@ class AIEditor {
                         }
 
                     } else {
-                        console.warn("Input event on editable element, but corresponding history segment is not type 'insert'. Index:", originalIndex);
+                        console.warn(`Input event on editable element (${expectedType}), but corresponding history segment is type '${segmentToUpdate.type}'. Index:`, originalIndex);
                     }
                 } else {
                     console.warn(`Could not find segment index ${originalIndex} in history version ${this.currentVersionIndex} to update text.`);
@@ -317,11 +323,13 @@ class AIEditor {
                 pairWrapper.classList.add('diff-segment-wrapper', 'diff-pair', 'accepted');
                 pairWrapper.dataset.segmentIndex = i; // Use first segment index for controls
 
-                // Render delete part
-                const deleteSpan = document.createElement('span');
-                deleteSpan.textContent = segment.text;
-                deleteSpan.classList.add('diff-delete');
-                pairWrapper.appendChild(deleteSpan);
+                // Render delete part (now editable, but disabled initially)
+                const deleteDiv = document.createElement('div');
+                deleteDiv.textContent = segment.text;
+                deleteDiv.contentEditable = "false"; // Not editable initially
+                deleteDiv.classList.add('diff-delete', 'diff-editable-delete');
+                deleteDiv.dataset.originalIndex = segment.originalIndex;
+                pairWrapper.appendChild(deleteDiv);
 
                 // Render editable insert part for pairs
                 const insertDiv = document.createElement('div'); // Use div
@@ -347,16 +355,19 @@ class AIEditor {
                 segmentWrapper.dataset.segmentIndex = i;
 
                 const textElement = document.createElement(
-                    segment.type === 'insert' ? 'div' : 'span' // Use div for insert, span otherwise
+                    // Use div for both insert and delete to allow contentEditable consistently
+                    segment.type === 'equal' ? 'span' : 'div'
                 );
                 textElement.textContent = segment.text;
                 textElement.classList.add(`diff-${segment.type}`);
 
-                // Make standalone inserts editable
-                if (segment.type === 'insert') {
+                // Make standalone inserts/deletes editable (set initial state)
+                if (segment.type === 'insert' || segment.type === 'delete') {
                     textElement.contentEditable = "true";
-                    textElement.classList.add('diff-editable-insert');
+                    textElement.classList.add(segment.type === 'insert' ? 'diff-editable-insert' : 'diff-editable-delete');
                     textElement.dataset.originalIndex = segment.originalIndex; // Store original index
+                    // Set initial editable state: inserts are editable, deletes are not
+                    textElement.contentEditable = (segment.type === 'insert');
                 }
                 segmentWrapper.appendChild(textElement);
 
@@ -458,6 +469,18 @@ class AIEditor {
             rejectButton.style.display = isAccepted ? 'inline-flex' : 'none'; // Show reject only if accepted
         } else {
             console.warn("Could not find accept/reject buttons within the wrapper for segment", segmentIndex);
+        }
+        // --- END FIX ---
+
+        // --- FIX: Toggle contentEditable state --- 
+        const insertElement = wrapper.querySelector('.diff-editable-insert');
+        const deleteElement = wrapper.querySelector('.diff-editable-delete');
+
+        if (insertElement) {
+            insertElement.contentEditable = isAccepted;
+        }
+        if (deleteElement) {
+            deleteElement.contentEditable = !isAccepted; // Editable only if rejected
         }
         // --- END FIX ---
 
