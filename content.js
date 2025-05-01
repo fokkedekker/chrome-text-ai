@@ -60,6 +60,8 @@ class AIEditor {
                 </button>
                 <h3>AI Editor</h3>
                 
+                <!-- Scrollable Content Area -->
+                <div class="ai-editor-main-content">
                 <div class="ai-editor-prompt-area">
                     <label for="ai-editor-prompt-input">Your Instructions:</label>
                     <textarea id="ai-editor-prompt-input" class="ai-editor-prompt" placeholder="Enter your editing instructions..."></textarea>
@@ -77,13 +79,14 @@ class AIEditor {
                 </div>
                 
                 <div class="ai-editor-status" id="ai-editor-status"></div>
+                </div> <!-- End Scrollable Content Area -->
                 
                 <div class="ai-editor-buttons">
                     <div id="ai-custom-buttons" class="ai-custom-buttons-container"></div> <!-- Container for custom buttons -->
-                    <button id="ai-editor-submit" class="ai-editor-submit">Get Suggestions</button>
-                    <button id="ai-editor-follow-up" class="ai-editor-follow-up" style="display: none;">Send Follow-up</button>
-                    <button id="ai-editor-apply" class="ai-editor-apply" style="display: none;">Apply Accepted Changes</button>
-                    <button id="ai-editor-cancel" class="ai-editor-cancel">Cancel</button>
+                    <button id="ai-editor-submit" class="ai-editor-submit"><i class="fas fa-magic"></i> Get Suggestions</button>
+                    <button id="ai-editor-follow-up" class="ai-editor-follow-up" style="display: none;"><i class="fas fa-paper-plane"></i> Send Follow-up</button>
+                    <button id="ai-editor-apply" class="ai-editor-apply ai-primary-action" style="display: none;"><i class="fas fa-check"></i> Apply Accepted Changes</button>
+                    <button id="ai-editor-cancel" class="ai-editor-cancel"><i class="fas fa-times"></i> Cancel</button>
                 </div>
             </div>
         `;
@@ -92,6 +95,12 @@ class AIEditor {
         this.editorModal = modal;
         this.addModalEventListeners();
         this.addDiffViewEventListeners(); // Add listener for diff buttons
+
+        // Explicitly tell FontAwesome to process icons AFTER modal is in DOM
+        if (typeof FontAwesome === 'object' && FontAwesome && typeof FontAwesome.dom === 'object' && FontAwesome.dom && typeof FontAwesome.dom.i2svg === 'function') {
+            FontAwesome.dom.i2svg({ node: this.editorModal });
+            console.log("FontAwesome.dom.i2svg() called for modal.");
+        }
     }
 
     addModalEventListeners() {
@@ -950,7 +959,6 @@ class AIEditor {
         this.editorModal.querySelector('#ai-editor-submit').style.display = 'none'; // Hide initial submit
         this.editorModal.querySelector('#ai-editor-follow-up').style.display = 'inline-block'; // Show follow-up
         this.editorModal.querySelector('#ai-editor-apply').style.display = 'inline-block'; // Show apply
-        this.showStatus('Review the proposed changes below.', 'info');
     }
 }
 
